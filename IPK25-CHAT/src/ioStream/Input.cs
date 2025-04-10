@@ -2,10 +2,14 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.ioStream;
 
-public class Input
+public static class Input
 {
-    //Using ref not out bucause of default values
-    public bool Parser(string[] args, ProgProperty property)
+    private static readonly string ID = @"[A-Za-z0-9_-]{1,20}";
+    private static readonly string SECRET = @"[A-Za-z0-9_-]{1,128}";
+    private static readonly string DNAME = @"[^\r\n]{1,20}";
+    private static readonly string CONTENT = @"[\x20-\x7E\r\n]{1,60000}"; // VCHAR + SP + LF
+    
+    public static bool Parser(string[] args, ProgProperty property)
     {
         string? argState = null;
         foreach (string arg in args)
@@ -72,8 +76,26 @@ public class Input
         }
         return true;
     }
-
-    void PrintUsage()
+    
+    //Return value if is input contend command or message (true = message)
+    public static void GrammarCheck(string input)
+    {
+        switch (input.Split(" ")[0])
+        {
+            case "/auth":
+                if(input.Split(" ").Length != 4)
+                    throw new Exception("Internal error: invalid grammar state");
+                break;
+            case "/join":
+                if(input.Split(" ").Length != 2)
+                    throw new Exception("Internal error: invalid grammar state");
+                break;
+            default:
+                throw new Exception("Internal error: invalid grammar state");
+        }
+    }
+    
+    private static void PrintUsage()
     {
         Console.WriteLine("Usage: ipk25-CHAT [OPTIONS]");
         Console.WriteLine();

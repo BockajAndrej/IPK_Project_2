@@ -3,7 +3,7 @@
 public static class Debug
 {
     public static bool isEnabled = true;
-    public static void StdErrWriteLine(string line)
+    public static void WriteLine(string line)
     {
         if (isEnabled)
             Console.Error.WriteLine(line);

@@ -1,17 +1,17 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿// Vypracoval: Andrej Bockaj
+// xlogin: xbockaa00
 
 using IPK25_CHAT;
 using IPK25_CHAT.ioStream;
 using IPK25_CHAT.structs;
 
-ClientFsm clientFsm = new ClientFsm();
-Input input = new Input();
-NetworkUtils networkUtils = new NetworkUtils();
-
+//TODO: zmenit hodnoty na null (tie nedefaultne)
 ProgProperty property = new ProgProperty(true,"127.0.0.1",4567,250,3);
 
-//input.Parser(args, property);
+Input.Parser(args, property);
 
-//clientFsm.RunClientFsm();
+ClientFsm clientFsm = new ClientFsm(property);
 
-await networkUtils.Connect(property);
+await clientFsm.RunClient();
+
+
