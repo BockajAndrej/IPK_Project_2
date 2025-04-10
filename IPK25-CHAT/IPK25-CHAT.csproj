@@ -8,10 +8,4 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
-    <ItemGroup>
-      <Compile Include="..\..\..\..\..\AuxPrograms\DebugingLib\DebugingLib\Debug.cs">
-        <Link>src\Debug.cs</Link>
-      </Compile>
-    </ItemGroup>
-
 </Project>
