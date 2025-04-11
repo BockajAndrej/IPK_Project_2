@@ -9,5 +9,7 @@ public enum MessageTypes
     Join,
     Msg,
     Ping,
-    Reply
+    ReplyOk,
+    ReplyNok,
+    DisplayName
 }

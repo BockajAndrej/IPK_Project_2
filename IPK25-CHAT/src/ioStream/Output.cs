@@ -10,16 +10,16 @@ public static class Output
         {
             //User cases
             case MessageTypes.Auth:
-                return $"AUTH {userProperty.Username} AS {userProperty.DisplayName} USING {userProperty.Secret}\\r\\n";
+                return $"AUTH {userProperty.Username} AS {userProperty.DisplayName} USING {userProperty.Secret}\r\n";
             case MessageTypes.Join:
-                return $"JOIN {userProperty.ChanelId} AS {userProperty.DisplayName}\\r\\n";
+                return $"JOIN {userProperty.ChanelId} AS {userProperty.DisplayName}\r\n";
             case MessageTypes.Msg:
-                return $"MSG FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\\r\\n";
-            //Program cases
+                return $"MSG FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\r\n";
             case MessageTypes.Bye:
-                return $"BYE FROM {userProperty.DisplayName}\\r\\n";
+                return $"BYE FROM {userProperty.DisplayName}\r\n";
+            //Program cases
             case MessageTypes.Err:
-                return $"ERR FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\\r\\n";
+                return $"ERR FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\r\n";
             default:
                 throw new ArgumentException("Invalid message type");
         }

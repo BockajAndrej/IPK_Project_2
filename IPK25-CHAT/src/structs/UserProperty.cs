@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace IPK25_CHAT.structs;
 
-public class UserProperty()
+public struct UserProperty()
 {
     [RegularExpression(@"^[a-zA-Z0-9_]{1,65535}$")]
     public string? MessageId;

@@ -7,9 +7,12 @@ public class ClientFsm
 {
     private FsmStates _state;
     private NetworkUtils _networkUtils;
-    private ProgProperty _progProperty;
     
+    private ProgProperty _progProperty;
     private UserProperty _userProperty;
+    
+    private MessageTypes? _lastOutputMsgType;
+    private MessageTypes? _lastInputMsgType;
     
     public ClientFsm(ProgProperty property)
     {
@@ -35,7 +38,9 @@ public class ClientFsm
                     continue;
                 try
                 {
-                    await ProcessCommand(input);
+                    _lastInputMsgType = Input.SendMsgType(input, ref _userProperty);
+                    if (_lastInputMsgType != null)
+                        await RunFsm(true, input);
                 }
                 catch (Exception ex)
                 {
@@ -53,7 +58,9 @@ public class ClientFsm
                 try
                 {
                     string msg = await _networkUtils.Receive(cts.Token);
-                    await RunFsm(true, msg);
+                    _lastOutputMsgType = Input.IncomeMsgType(msg);
+                    Input.IncomeMsgProcess(msg);
+                    await RunFsm(false, msg);
                 }
                 catch (Exception ex)
                 {
@@ -71,7 +78,7 @@ public class ClientFsm
     }
     
     //Todo: Zmenit ukoncenie funkcie aby ukoncilo program nie cez throw exception
-    private async Task RunFsm(bool forSend, string msg)
+    private async Task RunFsm(bool forSend, string input)
     {
         Debug.WriteLine($"IN STATE: {_state}");
         switch (_state)
@@ -79,81 +86,126 @@ public class ClientFsm
             case FsmStates.Start:
                 if(forSend)
                 {
-                    await _networkUtils.Send(msg);
-                    _state = FsmStates.Auth;
+                    if(_lastInputMsgType.Value == MessageTypes.Auth)
+                        _state = FsmStates.Auth;
+                    else if (_lastInputMsgType.Value == MessageTypes.Bye)
+                        _state = FsmStates.End;
+                    else
+                    {
+                        Console.WriteLine("INVALID MESSAGE");
+                        break;
+                    }
+                    
+                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    break;
                 }
-                else
-                    _state = FsmStates.End;
+                switch (_lastOutputMsgType)
+                {
+                    case MessageTypes.Err:
+                    case MessageTypes.Bye:
+                        _state = FsmStates.End;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
                 break;
             case FsmStates.Auth:
                 if(forSend)
-                    await _networkUtils.Send(msg);
-                else
                 {
-                    if (msg.StartsWith("REPLY NOT"))
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Auth));
-                    else if(msg.StartsWith("REPLY OK"))
-                        _state = FsmStates.Open;
-                    else if(msg.StartsWith("ERR FROM") || msg.StartsWith("BYE FROM"))
+                    if(_lastInputMsgType.Value == MessageTypes.Auth)
+                        _state = FsmStates.Auth;
+                    else if (_lastInputMsgType.Value == MessageTypes.Bye)
                         _state = FsmStates.End;
-                    else if (msg.StartsWith("MSG FROM"))
-                    {
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
-                        _state = FsmStates.End;
-                    }
                     else
                     {
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Bye));
-                        _state = FsmStates.End;
+                        Console.WriteLine("INVALID MESSAGE");
+                        break;
                     }
+                    
+                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    break;
                 }
-                
+                switch (_lastOutputMsgType)
+                {
+                    case MessageTypes.ReplyNok:
+                        break;
+                    case MessageTypes.ReplyOk:
+                        _state = FsmStates.Open;
+                        break;
+                    case MessageTypes.Err:
+                    case MessageTypes.Bye:
+                        _state = FsmStates.End;
+                        break;
+                    case MessageTypes.Msg:
+                        //await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        //_state = FsmStates.End;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
                 break;
             case FsmStates.Open:
-                _state = FsmStates.Join;
+                if(forSend)
+                {
+                    if(_lastInputMsgType.Value == MessageTypes.Join)
+                        _state = FsmStates.Join;
+                    else if (_lastInputMsgType.Value == MessageTypes.Bye)
+                        _state = FsmStates.End;
+                    else if (_lastInputMsgType.Value != MessageTypes.Msg)
+                    {
+                        Console.WriteLine("INVALID MESSAGE");
+                        break;
+                    }
+                    
+                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    break;
+                }
+                switch (_lastOutputMsgType)
+                {
+                    case MessageTypes.Msg:
+                        break;
+                    case MessageTypes.Err:
+                    case MessageTypes.Bye:
+                        _state = FsmStates.End;
+                        break;
+                    case MessageTypes.ReplyNok:
+                    case MessageTypes.ReplyOk:
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        _state = FsmStates.End;
+                        break;
+                }
                 break;
             case FsmStates.Join:
-                _state = FsmStates.End;
+                if(forSend)
+                {
+                    if (_lastInputMsgType.Value == MessageTypes.Bye)
+                        _state = FsmStates.End;
+                    else
+                    {
+                        Console.WriteLine("INVALID MESSAGE");
+                        break;
+                    }
+                    
+                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    break;
+                }
+                switch (_lastOutputMsgType)
+                {
+                    case MessageTypes.Msg:
+                        break;
+                    case MessageTypes.Err:
+                    case MessageTypes.Bye:
+                        _state = FsmStates.End;
+                        break;
+                    case MessageTypes.ReplyNok:
+                    case MessageTypes.ReplyOk:
+                        _state = FsmStates.Open;
+                        break;
+                }
                 break;
             case FsmStates.End:
             default:
                 throw new ArgumentOutOfRangeException();
         }
-    }
-
-    private async Task ProcessCommand(string input)
-    {
-        MessageTypes? type;
-        if ((type = InputMsgType(input)) != null)
-        {
-            var msg = Output.Builder(_userProperty, type);
-            await RunFsm(true, msg);
-        }
-    }
-
-    private MessageTypes? InputMsgType(string input)
-    {
-        Input.GrammarCheck(input);
-        
-        if (input.StartsWith("/rename"))
-        {
-            _userProperty.DisplayName = input.Split(" ")[1];
-            return null;
-        }
-
-        if (input.StartsWith("/auth"))
-        {
-            _userProperty.Username = input.Split(" ")[1];
-            _userProperty.DisplayName = input.Split(" ")[2];
-            _userProperty.Secret = input.Split(" ")[3];
-            return MessageTypes.Auth;
-        }
-
-        if (input.StartsWith("/join"))
-        {
-            _userProperty.ChanelId = input.Split(" ")[1];
-            return MessageTypes.Join;
-        }
-        return MessageTypes.Msg;
     }
 }

@@ -1,14 +1,10 @@
+using System.Text.RegularExpressions;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.ioStream;
 
 public static class Input
 {
-    private static readonly string ID = @"[A-Za-z0-9_-]{1,20}";
-    private static readonly string SECRET = @"[A-Za-z0-9_-]{1,128}";
-    private static readonly string DNAME = @"[^\r\n]{1,20}";
-    private static readonly string CONTENT = @"[\x20-\x7E\r\n]{1,60000}"; // VCHAR + SP + LF
-    
     public static bool Parser(string[] args, ProgProperty property)
     {
         string? argState = null;
@@ -78,10 +74,10 @@ public static class Input
     }
     
     //Return value if is input contend command or message (true = message)
-    public static void GrammarCheck(string input)
+    public static bool GrammarCheck(string input)
     {
         if (input.Split(" ").Length == 0)
-            throw new Exception("Grammar error: undefined argument");
+            return false;
         
         switch (input.Split(" ")[0])
         {
@@ -98,7 +94,83 @@ public static class Input
                     throw new Exception("Internal error: invalid grammar state");
                 break;
             default:
-                throw new Exception("Internal error: invalid grammar state");
+                return false;
+        }
+        return true;
+    }
+    
+    public static MessageTypes? SendMsgType(string input, ref UserProperty userProperty)
+    {
+        if(Input.GrammarCheck(input))
+        {
+            if (input.Split(" ")[0] == "/rename")
+            {
+                userProperty.DisplayName = input.Split(" ")[1];
+                return null;
+            }
+
+            if (input.Split(" ")[0] == "/auth")
+            {
+                userProperty.Username = input.Split(" ")[1];
+                userProperty.Secret = input.Split(" ")[2];
+                userProperty.DisplayName = input.Split(" ")[3];
+                return MessageTypes.Auth;
+            }
+
+            if (input.Split(" ")[0] == "/join")
+            {
+                userProperty.ChanelId = input.Split(" ")[1];
+                return MessageTypes.Join;
+            }
+        }
+        userProperty.MessageContent = input;
+        return MessageTypes.Msg;
+    }
+    public static MessageTypes? IncomeMsgType(string input)
+    {
+        if (input.Split(" ")[0] == "ERR")
+            return MessageTypes.Err;
+        if (input.Split(" ")[0] == "REPLY")
+        {
+            if(input.Split(" ")[1] == "OK")
+                return MessageTypes.ReplyOk;
+            return MessageTypes.ReplyNok;
+        }
+        if(input.Split(" ")[0] == "AUTH")
+            return MessageTypes.Auth;
+        if(input.Split(" ")[0] == "JOIN")
+            return MessageTypes.Join;
+        if(input.Split(" ")[0] == "MSG")
+            return MessageTypes.Msg;
+        if(input.Split(" ")[0] == "BYE")
+            return MessageTypes.Bye;
+        if(input.Split(" ")[0] == "CONFIRM")
+            return MessageTypes.Confirm;
+        if(input.Split(" ")[0] == "PING")
+            return MessageTypes.Ping;
+        throw new Exception("OutputMsgType error: Can not recognise message type");
+    }
+
+    //TODO potrebne dorobit interny ERROR (jeden error pre uzivatel system a tak)
+    public static void IncomeMsgProcess(string input)
+    {
+        var match = Regex.Match(input, @"FROM\s+(\S+)\s+IS\s+(\S+)");
+        switch (IncomeMsgType(input))
+        {
+            case MessageTypes.ReplyOk:
+                Console.WriteLine($"Action Success: {input.Split("IS ")[1]}");
+                break;
+            case MessageTypes.ReplyNok:
+                Console.WriteLine($"Action Failure: {input.Split("IS ")[1]}");
+                break;
+            case MessageTypes.Msg:
+                Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
+                break;
+            case MessageTypes.Err:
+                Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
+                break;
+            default:
+                throw new Exception("Income msg processing error");
         }
     }
     
