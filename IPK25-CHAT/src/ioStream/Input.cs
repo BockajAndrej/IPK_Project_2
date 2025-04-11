@@ -5,6 +5,8 @@ namespace IPK25_CHAT.ioStream;
 
 public static class Input
 {
+    private static string _savedInput = "";
+    
     public static bool Parser(string[] args, ProgProperty property)
     {
         string? argState = null;
@@ -126,7 +128,7 @@ public static class Input
         userProperty.MessageContent = input;
         return MessageTypes.Msg;
     }
-    public static MessageTypes? IncomeMsgType(string input)
+    private static MessageTypes? IncomeMsgType(string input)
     {
         if (input.Split(" ")[0] == "ERR")
             return MessageTypes.Err;
@@ -150,28 +152,44 @@ public static class Input
             return MessageTypes.Ping;
         throw new Exception("OutputMsgType error: Can not recognise message type");
     }
-
-    //TODO potrebne dorobit interny ERROR (jeden error pre uzivatel system a tak)
-    public static void IncomeMsgProcess(string input)
+    
+    public static MessageTypes? IncomeMsgProcess(string input)
     {
-        var match = Regex.Match(input, @"FROM\s+(\S+)\s+IS\s+(\S+)");
-        switch (IncomeMsgType(input))
+        _savedInput += input;
+        if (!input.Contains("\r\n"))
         {
-            case MessageTypes.ReplyOk:
-                Console.WriteLine($"Action Success: {input.Split("IS ")[1]}");
-                break;
-            case MessageTypes.ReplyNok:
-                Console.WriteLine($"Action Failure: {input.Split("IS ")[1]}");
-                break;
-            case MessageTypes.Msg:
-                Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
-                break;
-            case MessageTypes.Err:
-                Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
-                break;
-            default:
-                throw new Exception("Income msg processing error");
+            Debug.WriteLine($"CONTAIN = {_savedInput}");
+            return null;
         }
+
+        string lastStr = "";
+        foreach (var str in _savedInput.Split("\r\n"))
+        {
+            if(str.Length > 0)
+            {
+                lastStr = str;
+                var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
+                switch (IncomeMsgType(str))
+                {
+                    case MessageTypes.ReplyOk:
+                        Console.WriteLine($"Action Success: {str.Split("IS ")[1]}");
+                        break;
+                    case MessageTypes.ReplyNok:
+                        Console.WriteLine($"Action Failure: {str.Split("IS ")[1]}");
+                        break;
+                    case MessageTypes.Msg:
+                        Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
+                        break;
+                    case MessageTypes.Err:
+                        Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
+                        break;
+                    default:
+                        throw new Exception("Income msg processing error");
+                }
+            }
+        }
+        _savedInput = "";
+        return IncomeMsgType(lastStr);
     }
     
     private static void PrintUsage()

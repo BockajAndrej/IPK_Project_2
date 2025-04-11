@@ -28,6 +28,14 @@ public class ClientFsm
         
         using CancellationTokenSource cts = new CancellationTokenSource();
         
+        Console.CancelKeyPress += (sender, e) =>
+        {
+            Debug.WriteLine("Zachytený Ctrl+C, spúšťam cleanup...");
+            e.Cancel = true;
+            cts.Cancel();
+            Console.In.Dispose(); // should cancel ReadLine
+        };
+        
         //Receive stdin
         var readFromStdinTask = Task.Run(async () =>
         {
@@ -49,7 +57,7 @@ public class ClientFsm
                 }
             }
         }, cts.Token);
-        
+
         //Receive server
         var readFromServerTask = Task.Run(async () =>
         {
@@ -58,9 +66,9 @@ public class ClientFsm
                 try
                 {
                     string msg = await _networkUtils.Receive(cts.Token);
-                    _lastOutputMsgType = Input.IncomeMsgType(msg);
-                    Input.IncomeMsgProcess(msg);
-                    await RunFsm(false, msg);
+                    _lastOutputMsgType = Input.IncomeMsgProcess(msg);
+                    if (_lastOutputMsgType != null)
+                        await RunFsm(false, msg);
                 }
                 catch (Exception ex)
                 {
@@ -69,11 +77,12 @@ public class ClientFsm
                 }
             }
         }, cts.Token);
-
-        //Posunie sa ked skoncia vsetky tasky
-        await Task.WhenAll(readFromStdinTask, readFromServerTask);
         
+        //Readline stay active and will be terminated when program will be closed
+        await Task.WhenAny(readFromStdinTask, readFromServerTask);
+
         Debug.WriteLine("ENDING Client");
+        _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Bye));
         _networkUtils.Disconnect();
     }
     
@@ -92,7 +101,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        Console.WriteLine("INVALID MESSAGE");
+                        WriteError();
                         break;
                     }
                     
@@ -118,7 +127,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        Console.WriteLine("INVALID MESSAGE");
+                        WriteError();
                         break;
                     }
                     
@@ -153,7 +162,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else if (_lastInputMsgType.Value != MessageTypes.Msg)
                     {
-                        Console.WriteLine("INVALID MESSAGE");
+                        WriteError();
                         break;
                     }
                     
@@ -182,7 +191,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        Console.WriteLine("INVALID MESSAGE");
+                        WriteError();
                         break;
                     }
                     
@@ -207,5 +216,10 @@ public class ClientFsm
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    private void WriteError()
+    {
+        Console.WriteLine($"ERROR: {_userProperty.MessageContent}");
     }
 }
