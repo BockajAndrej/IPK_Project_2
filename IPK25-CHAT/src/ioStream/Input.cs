@@ -80,6 +80,9 @@ public static class Input
     //Return value if is input contend command or message (true = message)
     public static void GrammarCheck(string input)
     {
+        if (input.Split(" ").Length == 0)
+            throw new Exception("Grammar error: undefined argument");
+        
         switch (input.Split(" ")[0])
         {
             case "/auth":
@@ -87,6 +90,10 @@ public static class Input
                     throw new Exception("Internal error: invalid grammar state");
                 break;
             case "/join":
+                if(input.Split(" ").Length != 2)
+                    throw new Exception("Internal error: invalid grammar state");
+                break;
+            case "/rename":
                 if(input.Split(" ").Length != 2)
                     throw new Exception("Internal error: invalid grammar state");
                 break;

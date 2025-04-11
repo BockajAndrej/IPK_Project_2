@@ -1,21 +1,28 @@
+using IPK25_CHAT.structs;
+
 namespace IPK25_CHAT.ioStream;
 
 public static class Output
 {
-    public static string Build(string input)
+    public static string Builder(UserProperty userProperty, MessageTypes? messageType)
     {
-        switch (input.Split(" ")[0])
+        switch (messageType)
         {
-            case "/auth":
-                return $"AUTH {input.Split(" ")[1]} AS {input.Split(" ")[2]} USING {input.Split(" ")[3]}\\r\\n";
-            case "/join":
-                return $"JOIN {input.Split(" ")[1]} AS {input.Split(" ")[2]}\\r\\n";
-            case "/msg":
-                return $"MSG FROM {input.Split(" ")[1]} IS {input.Split(" ")[2]}\\r\\n";
-            case "/bye":
-                return $"BYE FROM {input.Split(" ")[1]}\\r\\n";
+            //User cases
+            case MessageTypes.Auth:
+                return $"AUTH {userProperty.Username} AS {userProperty.DisplayName} USING {userProperty.Secret}\\r\\n";
+            case MessageTypes.Join:
+                return $"JOIN {userProperty.ChanelId} AS {userProperty.DisplayName}\\r\\n";
+            case MessageTypes.Msg:
+                return $"MSG FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\\r\\n";
+            //Program cases
+            case MessageTypes.Bye:
+                return $"BYE FROM {userProperty.DisplayName}\\r\\n";
+            case MessageTypes.Err:
+                return $"ERR FROM {userProperty.DisplayName} IS {userProperty.MessageContent}\\r\\n";
             default:
-                throw new Exception("Internal error: invalid grammar state");
+                throw new ArgumentException("Invalid message type");
         }
+        
     }
 }

@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using IPK25_CHAT.ioStream;
 using IPK25_CHAT.structs;
 
@@ -8,18 +7,21 @@ public class ClientFsm
 {
     private FsmStates _state;
     private NetworkUtils _networkUtils;
-    private ProgProperty _property;
+    private ProgProperty _progProperty;
+    
+    private UserProperty _userProperty;
     
     public ClientFsm(ProgProperty property)
     {
         _state = FsmStates.Start;
         _networkUtils = new NetworkUtils();
-        _property = property;
+        
+        _progProperty = property;
     }
 
     public async Task RunClient()
     {
-        await _networkUtils.Connect(_property);
+        await _networkUtils.Connect(_progProperty);
         
         using CancellationTokenSource cts = new CancellationTokenSource();
         
@@ -29,11 +31,11 @@ public class ClientFsm
             while (!cts.Token.IsCancellationRequested)
             {
                 string? input = Console.ReadLine();
+                if (input == null)
+                    continue;
                 try
                 {
-                    Input.GrammarCheck(input);
-                    string msg = Output.Build(input);
-                    await RunFsm(true, msg);
+                    await ProcessCommand(input);
                 }
                 catch (Exception ex)
                 {
@@ -64,10 +66,11 @@ public class ClientFsm
         //Posunie sa ked skoncia vsetky tasky
         await Task.WhenAll(readFromStdinTask, readFromServerTask);
         
-        Debug.WriteLine("ENDING PICI");
+        Debug.WriteLine("ENDING Client");
         _networkUtils.Disconnect();
     }
     
+    //Todo: Zmenit ukoncenie funkcie aby ukoncilo program nie cez throw exception
     private async Task RunFsm(bool forSend, string msg)
     {
         Debug.WriteLine($"IN STATE: {_state}");
@@ -83,7 +86,28 @@ public class ClientFsm
                     _state = FsmStates.End;
                 break;
             case FsmStates.Auth:
-                _state = FsmStates.Open;
+                if(forSend)
+                    await _networkUtils.Send(msg);
+                else
+                {
+                    if (msg.StartsWith("REPLY NOT"))
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Auth));
+                    else if(msg.StartsWith("REPLY OK"))
+                        _state = FsmStates.Open;
+                    else if(msg.StartsWith("ERR FROM") || msg.StartsWith("BYE FROM"))
+                        _state = FsmStates.End;
+                    else if (msg.StartsWith("MSG FROM"))
+                    {
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        _state = FsmStates.End;
+                    }
+                    else
+                    {
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Bye));
+                        _state = FsmStates.End;
+                    }
+                }
+                
                 break;
             case FsmStates.Open:
                 _state = FsmStates.Join;
@@ -92,17 +116,44 @@ public class ClientFsm
                 _state = FsmStates.End;
                 break;
             case FsmStates.End:
-                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
-    private enum FsmStates
+
+    private async Task ProcessCommand(string input)
     {
-        Start, 
-        Auth,
-        Open,
-        Join,
-        End
+        MessageTypes? type;
+        if ((type = InputMsgType(input)) != null)
+        {
+            var msg = Output.Builder(_userProperty, type);
+            await RunFsm(true, msg);
+        }
+    }
+
+    private MessageTypes? InputMsgType(string input)
+    {
+        Input.GrammarCheck(input);
+        
+        if (input.StartsWith("/rename"))
+        {
+            _userProperty.DisplayName = input.Split(" ")[1];
+            return null;
+        }
+
+        if (input.StartsWith("/auth"))
+        {
+            _userProperty.Username = input.Split(" ")[1];
+            _userProperty.DisplayName = input.Split(" ")[2];
+            _userProperty.Secret = input.Split(" ")[3];
+            return MessageTypes.Auth;
+        }
+
+        if (input.StartsWith("/join"))
+        {
+            _userProperty.ChanelId = input.Split(" ")[1];
+            return MessageTypes.Join;
+        }
+        return MessageTypes.Msg;
     }
 }
