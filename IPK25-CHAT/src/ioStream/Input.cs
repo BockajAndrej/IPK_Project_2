@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using IPK25_CHAT.structs;
 
@@ -161,34 +162,42 @@ public static class Input
             Debug.WriteLine($"CONTAIN = {_savedInput}");
             return null;
         }
-
-        string lastStr = "";
-        foreach (var str in _savedInput.Split("\r\n"))
+        
+        string lastStr;
+        do
         {
-            if(str.Length > 0)
+            //Processes first message and next one can save into _saveInput
+            int index = _savedInput.IndexOf("\r\n", StringComparison.Ordinal);
+            string str = _savedInput.Substring(0, index + 2);
+            if(str.Length != _savedInput.Length)
+                _savedInput = _savedInput.Substring(index + 2);
+            else
+                _savedInput = "";
+            
+            lastStr = str;
+            var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
+            
+            switch (IncomeMsgType(str))
             {
-                lastStr = str;
-                var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
-                switch (IncomeMsgType(str))
-                {
-                    case MessageTypes.ReplyOk:
-                        Console.WriteLine($"Action Success: {str.Split("IS ")[1]}");
-                        break;
-                    case MessageTypes.ReplyNok:
-                        Console.WriteLine($"Action Failure: {str.Split("IS ")[1]}");
-                        break;
-                    case MessageTypes.Msg:
-                        Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
-                        break;
-                    case MessageTypes.Err:
-                        Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
-                        break;
-                    default:
-                        throw new Exception("Income msg processing error");
-                }
+                case MessageTypes.ReplyOk:
+                    Console.Write($"Action Success: {str.Split("IS ")[1]}");
+                    break;
+                case MessageTypes.ReplyNok:
+                    Console.Write($"Action Failure: {str.Split("IS ")[1]}");
+                    break;
+                case MessageTypes.Msg:
+                    Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
+                    break;
+                case MessageTypes.Err:
+                    Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
+                    break;
+                default:
+                    throw new Exception("Income msg processing error");
             }
-        }
-        _savedInput = "";
+            
+        }while(_savedInput.Contains("\r\n"));
+        
+        //Defines according to last message
         return IncomeMsgType(lastStr);
     }
     

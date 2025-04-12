@@ -101,7 +101,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        WriteError();
+                        WriteError(input);
                         break;
                     }
                     
@@ -127,7 +127,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        WriteError();
+                        WriteError(input);
                         break;
                     }
                     
@@ -146,8 +146,8 @@ public class ClientFsm
                         _state = FsmStates.End;
                         break;
                     case MessageTypes.Msg:
-                        //await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
-                        //_state = FsmStates.End;
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        _state = FsmStates.End;
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -162,7 +162,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else if (_lastInputMsgType.Value != MessageTypes.Msg)
                     {
-                        WriteError();
+                        WriteError(input);
                         break;
                     }
                     
@@ -191,7 +191,7 @@ public class ClientFsm
                         _state = FsmStates.End;
                     else
                     {
-                        WriteError();
+                        WriteError(input);
                         break;
                     }
                     
@@ -218,8 +218,8 @@ public class ClientFsm
         }
     }
 
-    private void WriteError()
+    private void WriteError(string input)
     {
-        Console.WriteLine($"ERROR: {_userProperty.MessageContent}");
+        Console.WriteLine($"ERROR: {input}");
     }
 }
