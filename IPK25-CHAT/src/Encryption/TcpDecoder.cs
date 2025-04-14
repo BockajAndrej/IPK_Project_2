@@ -4,7 +4,7 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.ioStream;
 
-public static class Input
+public static class TcpDecoder
 {
     private static string _savedInput = "";
     
@@ -102,7 +102,7 @@ public static class Input
         return true;
     }
     
-    public static MessageTypes? SendMsgType(string input)
+    public static MessageTypes? DecodeClient_MsgType(string input)
     {
         if(GrammarCheck(input))
         {
@@ -117,7 +117,8 @@ public static class Input
         }
         return MessageTypes.Msg;
     }
-    private static MessageTypes? IncomeMsgType(string input)
+    
+    private static MessageTypes? DecodeServer_MsgType(string input)
     {
         if (input.Split(" ")[0] == "ERR")
             return MessageTypes.Err;
@@ -163,7 +164,7 @@ public static class Input
             lastStr = str;
             var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
             
-            msgType = IncomeMsgType(str);
+            msgType = DecodeServer_MsgType(str);
             if(msgType == null)
             {
                 Console.WriteLine($"ERROR: {input}");

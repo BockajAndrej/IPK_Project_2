@@ -11,5 +11,4 @@ public enum MessageTypes
     Ping,
     ReplyOk,
     ReplyNok,
-    DisplayName
 }

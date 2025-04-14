@@ -1,4 +1,3 @@
-using System.Data;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -6,23 +5,14 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT;
 
-public class NetworkUtils
+public class TcpUtils : ANetUtils
 {
     private TcpClient? _client;
     private NetworkStream? _stream;
-    public IPAddress[] ResolveDomain(string serverUrl)
-    {
-        IPAddress[] addresses = Dns.GetHostAddresses(serverUrl);
-        if (addresses.Length == 0)
-        {
-            throw new Exception("Could not resolve domain to an IP address.");
-        }
-        return addresses;
-    }
-
+    
     public async Task Connect(ProgProperty prop)
     {
-        IPAddress[] serverIp = ResolveDomain(prop.Url);
+        IPAddress serverIp = ResolveDomain(prop.Url);
         
         Debug.WriteLine("Connecting...");
 
@@ -34,7 +24,7 @@ public class NetworkUtils
         _stream = _client.GetStream();
     }
     
-    public async Task Send(string msg)
+    public override async Task Send(string msg)
     {
         // Send message
         Debug.WriteLine("Sending message.");
@@ -43,7 +33,7 @@ public class NetworkUtils
         Debug.WriteLine("Message sent.");
     }
 
-    public async Task<string> Receive(CancellationToken token)
+    public override async Task<string> Receive(CancellationToken token)
     {
         // Receive response
         byte[] buffer = new byte[1024];

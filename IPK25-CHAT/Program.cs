@@ -8,10 +8,17 @@ using IPK25_CHAT.structs;
 //TODO: zmenit hodnoty na null (tie nedefaultne)
 ProgProperty progProperty = new ProgProperty(null,null,4567,250,3);
 
-Input.Parser(args, ref progProperty);
+TcpDecoder.Parser(args, ref progProperty);
 
-ClientFsm clientFsm = new ClientFsm(progProperty);
-
-await clientFsm.RunClient();
+if(progProperty.IsTcp == true)
+{
+    TcpFsm tcpFsm = new TcpFsm(progProperty);
+    await tcpFsm.RunClient();
+}
+else
+{
+    TcpFsm udpFsm = new TcpFsm(progProperty);
+    await udpFsm.RunClient();
+}
 
 return 0;

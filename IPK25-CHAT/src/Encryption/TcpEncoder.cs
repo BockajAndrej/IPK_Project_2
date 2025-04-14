@@ -2,7 +2,7 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.ioStream;
 
-public static class Output
+public static class TcpEncoder
 {
     public static string Builder(UserProperty userProperty, MessageTypes? messageType)
     {

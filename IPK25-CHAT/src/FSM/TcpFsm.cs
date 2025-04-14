@@ -3,96 +3,51 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT;
 
-public class ClientFsm
+public class TcpFsm : AFsm
 {
-    private FsmStates _state;
-    private NetworkUtils _networkUtils;
-    
-    private ProgProperty _progProperty;
-    private UserProperty _userProperty;
+    private TcpUtils _networkUtils;
     
     private MessageTypes? _lastOutputMsgType;
     private MessageTypes? _lastInputMsgType;
-    
-    public ClientFsm(ProgProperty property)
+
+    public TcpFsm(ProgProperty property) : base(property)
     {
-        _state = FsmStates.Start;
-        _networkUtils = new NetworkUtils();
-        
-        _progProperty = property;
+        _networkUtils = new TcpUtils();
     }
 
-    public async Task RunClient()
+    protected override void CleanUp()
     {
-        await _networkUtils.Connect(_progProperty);
-        
-        using CancellationTokenSource cts = new CancellationTokenSource();
-        
-        Console.CancelKeyPress += (sender, e) =>
-        {
-            Debug.WriteLine("Zachytený Ctrl+C, spúšťam cleanup...");
-            e.Cancel = true;
-            cts.Cancel();
-            Console.In.Dispose(); // should cancel ReadLine
-        };
-        
-        //Receive stdin
-        var readFromStdinTask = Task.Run(async () =>
-        {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                string? input = Console.ReadLine();
-                try
-                {
-                    if (input == null)
-                        throw new NullReferenceException();
-                    _lastInputMsgType = Input.SendMsgType(input);
-                    if (_lastInputMsgType == null)
-                        ModifyUserProperty(input);
-                    else
-                        await RunFsm(true, input);
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    cts.Cancel();
-                }
-            }
-        }, cts.Token);
-
-        //Receive server
-        var readFromServerTask = Task.Run(async () =>
-        {
-            while (!cts.Token.IsCancellationRequested)
-            {
-                try
-                {
-                    string msg = await _networkUtils.Receive(cts.Token);
-                    _lastOutputMsgType = Input.IncomeMsgProcess(msg);
-                    if (_lastOutputMsgType != null)
-                        await RunFsm(false, msg);
-                    else
-                    {
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
-                        throw new NullReferenceException();
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(ex.Message);
-                    cts.Cancel();
-                }
-            }
-        }, cts.Token);
-        
-        //Readline stay active and will be terminated when program will be closed
-        await Task.WhenAny(readFromStdinTask, readFromServerTask);
-
-        Debug.WriteLine("ENDING Client");
-        _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Bye));
+        _networkUtils.Send(TcpEncoder.Builder(_userProperty, MessageTypes.Bye));
         _networkUtils.Disconnect();
     }
-    
+
+    protected override async Task NetworkSetup()
+    {
+        await _networkUtils.Connect(_progProperty);
+    }
+
+    protected override async Task ClientTask(string input)
+    {
+        _lastInputMsgType = TcpDecoder.DecodeClient_MsgType(input);
+        if (_lastInputMsgType == null)
+            ModifyUserProperty(input);
+        else
+            await RunFsm(true, input);
+    }
+
+    protected override async Task ServerTasks(CancellationTokenSource cts)
+    {
+        string msg = await _networkUtils.Receive(cts.Token);
+        _lastOutputMsgType = TcpDecoder.IncomeMsgProcess(msg);
+        if (_lastOutputMsgType != null)
+            await RunFsm(false, msg);
+        else
+        {
+            await _networkUtils.Send(TcpEncoder.Builder(_userProperty, MessageTypes.Err));
+            throw new NullReferenceException();
+        }
+    }
+
     private async Task RunFsm(bool forSend, string input)
     {
         Debug.WriteLine($"IN STATE: {_state}");
@@ -111,7 +66,7 @@ public class ClientFsm
                         break;
                     }
                     ModifyUserProperty(input);
-                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    await _networkUtils.Send(TcpEncoder.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
                 switch (_lastOutputMsgType)
@@ -136,7 +91,7 @@ public class ClientFsm
                         break;
                     }
                     ModifyUserProperty(input);
-                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    await _networkUtils.Send(TcpEncoder.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
                 switch (_lastOutputMsgType)
@@ -151,7 +106,7 @@ public class ClientFsm
                         throw new Exception();
                         break;
                     case MessageTypes.Msg:
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        await _networkUtils.Send(TcpEncoder.Builder(_userProperty, MessageTypes.Err));
                         throw new Exception();
                         break;
                     default:
@@ -171,7 +126,7 @@ public class ClientFsm
                         break;
                     }
                     ModifyUserProperty(input);
-                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                    await _networkUtils.Send(TcpEncoder.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
                 switch (_lastOutputMsgType)
@@ -184,7 +139,7 @@ public class ClientFsm
                         break;
                     case MessageTypes.ReplyNok:
                     case MessageTypes.ReplyOk:
-                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        await _networkUtils.Send(TcpEncoder.Builder(_userProperty, MessageTypes.Err));
                         throw new Exception();
                         break;
                 }
@@ -223,7 +178,7 @@ public class ClientFsm
 
     private void ModifyUserProperty(string input)
     {
-        if(Input.GrammarCheck(input))
+        if(TcpDecoder.GrammarCheck(input))
         {
             if (input.Split(" ")[0] == "/rename")
             {
