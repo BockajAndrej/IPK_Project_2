@@ -2,13 +2,14 @@
 // xlogin: xbockaa00
 
 using IPK25_CHAT;
-using IPK25_CHAT.ioStream;
+using IPK25_CHAT.FSM;
 using IPK25_CHAT.structs;
 
 //TODO: zmenit hodnoty na null (tie nedefaultne)
 ProgProperty progProperty = new ProgProperty(null,null,4567,250,3);
 
-TcpDecoder.Parser(args, ref progProperty);
+if (!Input.Parser(args, ref progProperty))
+    return 0;
 
 if(progProperty.IsTcp == true)
 {
@@ -17,7 +18,7 @@ if(progProperty.IsTcp == true)
 }
 else
 {
-    TcpFsm udpFsm = new TcpFsm(progProperty);
+    UdpFsm udpFsm = new UdpFsm(progProperty);
     await udpFsm.RunClient();
 }
 

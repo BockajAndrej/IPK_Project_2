@@ -1,3 +1,4 @@
+using IPK25_CHAT.ioStream;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT;
@@ -8,6 +9,9 @@ public abstract class AFsm
     
     protected ProgProperty _progProperty;
     protected UserProperty _userProperty;
+    
+    protected MessageTypes? _lastOutputMsgType;
+    protected MessageTypes? _lastInputMsgType;
 
     protected AFsm(ProgProperty property)
     {
@@ -19,6 +23,11 @@ public abstract class AFsm
     protected abstract Task NetworkSetup();
     protected abstract Task ClientTask(string input);
     protected abstract Task ServerTasks(CancellationTokenSource cts);
+    
+    protected abstract Task startState(string? input);
+    protected abstract Task authState(string? input);
+    protected abstract Task openState(string? input);
+    protected abstract Task joinState(string? input);
     
     public async Task RunClient()
     {
@@ -76,4 +85,50 @@ public abstract class AFsm
         CleanUp();
     }
     
+    protected async Task RunFsm(string? input)
+    {
+        Debug.WriteLine($"IN STATE: {_state}");
+        switch (_state)
+        {
+            case FsmStates.Start:
+                await startState(input);
+                break;
+            case FsmStates.Auth:
+                await authState(input);
+                break;
+            case FsmStates.Open:
+                await openState(input);
+                break;
+            case FsmStates.Join:
+                await joinState(input);
+                break;
+            case FsmStates.End:
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+    }
+    
+    protected void ModifyUserProperty(string input)
+    {
+        if(Input.isCommand(input))
+        {
+            if (input.Split(" ")[0] == "/rename")
+            {
+                _userProperty.DisplayName = input.Split(" ")[1];
+            }
+
+            if (input.Split(" ")[0] == "/auth")
+            {
+                _userProperty.Username = input.Split(" ")[1];
+                _userProperty.Secret = input.Split(" ")[2];
+                _userProperty.DisplayName = input.Split(" ")[3];
+            }
+
+            if (input.Split(" ")[0] == "/join")
+            {
+                _userProperty.ChanelId = input.Split(" ")[1];
+            }
+        }
+        _userProperty.MessageContent = input;
+    }
 }

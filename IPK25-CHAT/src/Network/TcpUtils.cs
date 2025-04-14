@@ -24,7 +24,7 @@ public class TcpUtils : ANetUtils
         _stream = _client.GetStream();
     }
     
-    public override async Task Send(string msg)
+    public async Task Send(string msg)
     {
         // Send message
         Debug.WriteLine("Sending message.");
@@ -33,7 +33,7 @@ public class TcpUtils : ANetUtils
         Debug.WriteLine("Message sent.");
     }
 
-    public override async Task<string> Receive(CancellationToken token)
+    public async Task<string> Receive(CancellationToken token)
     {
         // Receive response
         byte[] buffer = new byte[1024];
@@ -44,7 +44,7 @@ public class TcpUtils : ANetUtils
         return response;
     }
 
-    public void Disconnect()
+    public override void Dispose()
     {
         if (_stream != null) 
             _stream.Close();

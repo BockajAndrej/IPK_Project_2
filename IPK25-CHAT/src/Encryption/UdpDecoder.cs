@@ -1,0 +1,112 @@
+using System.Text;
+using IPK25_CHAT.structs;
+
+namespace IPK25_CHAT.ioStream;
+
+public static class UdpDecoder
+{
+    private static MessageTypes? DecodeServer_MsgType(byte[] data)
+    {
+        switch (data[0])
+        {
+            case 0x00:
+                return MessageTypes.Confirm;
+            case 0x01:
+                if(data[3] == 0x00)
+                    return MessageTypes.ReplyNok;
+                return MessageTypes.ReplyOk;
+            case 0x02:
+                return MessageTypes.Auth;
+            case 0x03:
+                return MessageTypes.Join;
+            case 0x04:
+                return MessageTypes.Msg;
+            case 0xFE:
+                return MessageTypes.Err;
+            case 0xFF:
+                return MessageTypes.Bye;
+            case 0xFD:
+                return MessageTypes.Ping;
+        }
+        return null;
+    }
+
+    private static int numberOfBytesToRead(byte[] data, int startIndex)
+    {
+        int cnt = 0;
+        if(startIndex < data.Length)
+        {
+            while (data[startIndex + cnt] != 0x00)
+                cnt++;
+        }
+        return cnt;
+    }
+    
+    public static MessageTypes? ProcessMsg(byte[] data)
+    {
+        Queue<int> lengths = new Queue<int>();
+
+        int currentIndex = 3;
+        int length = numberOfBytesToRead(data, currentIndex);
+
+        while (length > 0)
+        {
+            lengths.Enqueue(length);
+            currentIndex += length;
+
+            // read next length at the updated position
+            length = numberOfBytesToRead(data, currentIndex + 1);
+        }
+            
+        MessageTypes? msgType = DecodeServer_MsgType(data);
+
+        int len;
+        byte[] word;
+        currentIndex = 3;
+        byte[] word2;
+        switch (msgType)
+        {
+            case MessageTypes.ReplyOk:
+                len = lengths.Dequeue();
+                word = new byte[len];
+                Array.Copy(data, currentIndex, word, 0, len);
+                Console.Write($"Action Success: {Encoding.UTF8.GetString(word)}");
+                break;
+            case MessageTypes.ReplyNok:
+                len = lengths.Dequeue();
+                word = new byte[len];
+                Array.Copy(data, currentIndex, word, 0, len);
+                Console.Write($"Action Failure: {Encoding.UTF8.GetString(word)}");
+                break;
+            case MessageTypes.Msg:
+                len = lengths.Dequeue();
+                word = new byte[len];
+                Array.Copy(data, currentIndex, word, 0, len);
+                
+                currentIndex += len + 1;
+                len = lengths.Dequeue();
+                word2 = new byte[len];
+                Array.Copy(data, currentIndex, word2, 0, len);
+                
+                Console.WriteLine($"{Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}");
+                break;
+            case MessageTypes.Err:
+                len = lengths.Dequeue();
+                word = new byte[len];
+                Array.Copy(data, currentIndex, word, 0, len);
+                
+                currentIndex += len + 1;
+                len = lengths.Dequeue();
+                word2 = new byte[len];
+                Array.Copy(data, currentIndex, word2, 0, len);
+                
+                Console.WriteLine($"ERROR FROM {Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}");
+                break;
+            default:
+                throw new Exception("Income msg processing error");
+        }
+            
+        //Defines according to last message
+        return msgType;
+    }
+}

@@ -5,8 +5,8 @@ namespace IPK25_CHAT;
 
 public abstract class ANetUtils
 {
-    public abstract Task Send(string msg);
-    public abstract Task<string> Receive(CancellationToken token);
+    public abstract void Dispose();
+    
     public IPAddress ResolveDomain(string serverUrl)
     {
         IPAddress[] addresses = Dns.GetHostAddresses(serverUrl);

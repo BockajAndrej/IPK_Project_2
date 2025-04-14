@@ -5,7 +5,7 @@ namespace IPK25_CHAT.structs;
 public struct UserProperty()
 {
     [RegularExpression(@"^[a-zA-Z0-9_]{1,65535}$")]
-    public string? MessageId;
+    public int MessageId = 0;
 
     [RegularExpression(@"^[a-zA-Z0-9_]{1,20}$")]
     public string? Username { get; set; }

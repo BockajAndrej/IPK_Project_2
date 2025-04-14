@@ -8,142 +8,35 @@ public static class TcpDecoder
 {
     private static string _savedInput = "";
     
-    public static bool Parser(string[] args, ref ProgProperty property)
-    {
-        string? argState = null;
-        foreach (string arg in args)
-        {
-            // Parse arguments
-            if (argState == null)
-            {
-                if (arg == "-h")
-                {
-                    PrintUsage();
-                    return false;
-                }
-                if (arg.StartsWith('-'))
-                {
-                    argState = arg;
-                }
-                else
-                    throw new Exception("Argument error: undefined argument");
-            }
-            else
-            {
-                if (arg.StartsWith("-"))
-                    break;
-                switch (argState)
-                {
-                    case "-t":
-                        if(property.IsTcp != null)
-                            throw new Exception("Argument error: multiple transport protocols");
-                        if (arg != "tcp" && arg != "udp")
-                            throw new Exception("Argument error: undefined transport protocol");
-                        property.IsTcp = arg == "tcp";
-                        break;
-                    case "-s":
-                        if (property.Url != null)
-                            throw new Exception("Argument error: multiple server URLs");
-                        property.Url = arg;
-                        break;
-                    case "-p":
-                        if(!int.TryParse(arg, out int port))
-                            throw new Exception("Argument error: port is invalid");
-                        property.Port = port;
-                        break;
-                    case "-d":
-                        property.Timeout = int.Parse(arg);
-                        if(property.Timeout <= 0)
-                            throw new Exception("Argument error: wait time must be positive integer");
-                        break;
-                    case "-r":
-                        if(!int.TryParse(arg, out int numberOfRetransmits))
-                            throw new Exception("Argument error: number of retransmit is invalid");
-                        property.NumberOfRetransmits = numberOfRetransmits;
-                        break;
-                    default:
-                        throw new Exception("Internal error: invalid argument state");
-                }
-                argState = null;
-            }
-        }
-        
-
-        if (property.Url == null || property.IsTcp == null)
-        {
-            return false;
-        }
-        return true;
-    }
-    
-    //Return value if is input contend command or message (false = message)
-    public static bool GrammarCheck(string input)
-    {
-        if (input.Split(" ").Length == 0)
-            return false;
-        
-        switch (input.Split(" ")[0])
-        {
-            case "/auth":
-                if(input.Split(" ").Length != 4)
-                    return false;
-                break;
-            case "/join":
-                if(input.Split(" ").Length != 2)
-                    return false;
-                break;
-            case "/rename":
-                if(input.Split(" ").Length != 2)
-                    return false;
-                break;
-            default:
-                return false;
-        }
-        return true;
-    }
-    
-    public static MessageTypes? DecodeClient_MsgType(string input)
-    {
-        if(GrammarCheck(input))
-        {
-            if (input.Split(" ")[0] == "/rename")
-                return null;
-
-            if (input.Split(" ")[0] == "/auth")
-                return MessageTypes.Auth;
-
-            if (input.Split(" ")[0] == "/join")
-                return MessageTypes.Join;
-        }
-        return MessageTypes.Msg;
-    }
-    
     private static MessageTypes? DecodeServer_MsgType(string input)
     {
-        if (input.Split(" ")[0] == "ERR")
-            return MessageTypes.Err;
-        if (input.Split(" ")[0] == "REPLY")
+        switch (input.Split(" ")[0])
         {
-            if(input.Split(" ")[1] == "OK")
-                return MessageTypes.ReplyOk;
-            return MessageTypes.ReplyNok;
+            case "ERR": 
+                return MessageTypes.Err;
+            case "REPLY": 
+            {
+                if(input.Split(" ")[1] == "OK")
+                    return MessageTypes.ReplyOk;
+                return MessageTypes.ReplyNok;
+            }
+            case "AUTH": 
+                return MessageTypes.Auth;
+            case "JOIN": 
+                return MessageTypes.Join;
+            case "MSG": 
+                return MessageTypes.Msg;
+            case "BYE": 
+                return MessageTypes.Bye;
+            case "CONFIRM": 
+                return MessageTypes.Confirm;
+            case "PING": 
+                return MessageTypes.Ping;
         }
-        if(input.Split(" ")[0] == "AUTH")
-            return MessageTypes.Auth;
-        if(input.Split(" ")[0] == "JOIN")
-            return MessageTypes.Join;
-        if(input.Split(" ")[0] == "MSG")
-            return MessageTypes.Msg;
-        if(input.Split(" ")[0] == "BYE")
-            return MessageTypes.Bye;
-        if(input.Split(" ")[0] == "CONFIRM")
-            return MessageTypes.Confirm;
-        if(input.Split(" ")[0] == "PING")
-            return MessageTypes.Ping;
         return null;
     }
     
-    public static MessageTypes? IncomeMsgProcess(string input)
+    public static MessageTypes? ProcessMsg(string input)
     {
         _savedInput += input;
         if (!input.Contains("\r\n"))
@@ -194,10 +87,4 @@ public static class TcpDecoder
         return msgType;
     }
     
-    private static void PrintUsage()
-    {
-        Console.WriteLine("Usage: ipk25-CHAT [OPTIONS]");
-        Console.WriteLine();
-        Console.WriteLine("Options:");
-    }
 }
