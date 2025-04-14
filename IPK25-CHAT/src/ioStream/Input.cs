@@ -69,7 +69,7 @@ public static class Input
         }
         
 
-        if (property.Url == null)
+        if (property.Url == null || property.IsTcp == null)
         {
             return false;
         }
