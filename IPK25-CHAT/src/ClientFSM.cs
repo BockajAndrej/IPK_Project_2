@@ -42,10 +42,10 @@ public class ClientFsm
             while (!cts.Token.IsCancellationRequested)
             {
                 string? input = Console.ReadLine();
-                if (input == null)
-                    continue;
                 try
                 {
+                    if (input == null)
+                        throw new NullReferenceException();
                     _lastInputMsgType = Input.SendMsgType(input);
                     if (_lastInputMsgType == null)
                         ModifyUserProperty(input);

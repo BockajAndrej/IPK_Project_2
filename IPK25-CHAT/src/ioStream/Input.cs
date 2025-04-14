@@ -174,7 +174,7 @@ public static class Input
                     Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
                     break;
                 case MessageTypes.Err:
-                    Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[1].Value}");
+                    Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[2].Value}");
                     break;
                 default:
                     throw new Exception("Income msg processing error");
