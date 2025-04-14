@@ -46,8 +46,10 @@ public class ClientFsm
                     continue;
                 try
                 {
-                    _lastInputMsgType = Input.SendMsgType(input, ref _userProperty);
-                    if (_lastInputMsgType != null)
+                    _lastInputMsgType = Input.SendMsgType(input);
+                    if (_lastInputMsgType == null)
+                        ModifyUserProperty(input);
+                    else
                         await RunFsm(true, input);
                 }
                 catch (Exception ex)
@@ -86,7 +88,6 @@ public class ClientFsm
         _networkUtils.Disconnect();
     }
     
-    //Todo: Zmenit ukoncenie funkcie aby ukoncilo program nie cez throw exception
     private async Task RunFsm(bool forSend, string input)
     {
         Debug.WriteLine($"IN STATE: {_state}");
@@ -98,13 +99,13 @@ public class ClientFsm
                     if(_lastInputMsgType.Value == MessageTypes.Auth)
                         _state = FsmStates.Auth;
                     else if (_lastInputMsgType.Value == MessageTypes.Bye)
-                        _state = FsmStates.End;
+                        throw new Exception();
                     else
                     {
                         WriteError(input);
                         break;
                     }
-                    
+                    ModifyUserProperty(input);
                     await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
@@ -112,8 +113,7 @@ public class ClientFsm
                 {
                     case MessageTypes.Err:
                     case MessageTypes.Bye:
-                        _state = FsmStates.End;
-                        break;
+                        throw new Exception();
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -124,13 +124,13 @@ public class ClientFsm
                     if(_lastInputMsgType.Value == MessageTypes.Auth)
                         _state = FsmStates.Auth;
                     else if (_lastInputMsgType.Value == MessageTypes.Bye)
-                        _state = FsmStates.End;
+                        throw new Exception();
                     else
                     {
                         WriteError(input);
                         break;
                     }
-                    
+                    ModifyUserProperty(input);
                     await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
@@ -143,11 +143,11 @@ public class ClientFsm
                         break;
                     case MessageTypes.Err:
                     case MessageTypes.Bye:
-                        _state = FsmStates.End;
+                        throw new Exception();
                         break;
                     case MessageTypes.Msg:
                         await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
-                        _state = FsmStates.End;
+                        throw new Exception();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -159,13 +159,13 @@ public class ClientFsm
                     if(_lastInputMsgType.Value == MessageTypes.Join)
                         _state = FsmStates.Join;
                     else if (_lastInputMsgType.Value == MessageTypes.Bye)
-                        _state = FsmStates.End;
+                        throw new Exception();
                     else if (_lastInputMsgType.Value != MessageTypes.Msg)
                     {
                         WriteError(input);
                         break;
                     }
-                    
+                    ModifyUserProperty(input);
                     await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
                     break;
                 }
@@ -175,12 +175,12 @@ public class ClientFsm
                         break;
                     case MessageTypes.Err:
                     case MessageTypes.Bye:
-                        _state = FsmStates.End;
+                        throw new Exception();
                         break;
                     case MessageTypes.ReplyNok:
                     case MessageTypes.ReplyOk:
                         await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
-                        _state = FsmStates.End;
+                        throw new Exception();
                         break;
                 }
                 break;
@@ -188,14 +188,8 @@ public class ClientFsm
                 if(forSend)
                 {
                     if (_lastInputMsgType.Value == MessageTypes.Bye)
-                        _state = FsmStates.End;
-                    else
-                    {
-                        WriteError(input);
-                        break;
-                    }
-                    
-                    await _networkUtils.Send(Output.Builder(_userProperty, _lastInputMsgType));
+                        throw new Exception();
+                    WriteError(input);
                     break;
                 }
                 switch (_lastOutputMsgType)
@@ -204,8 +198,7 @@ public class ClientFsm
                         break;
                     case MessageTypes.Err:
                     case MessageTypes.Bye:
-                        _state = FsmStates.End;
-                        break;
+                        throw new Exception();
                     case MessageTypes.ReplyNok:
                     case MessageTypes.ReplyOk:
                         _state = FsmStates.Open;
@@ -221,5 +214,29 @@ public class ClientFsm
     private void WriteError(string input)
     {
         Console.WriteLine($"ERROR: {input}");
+    }
+
+    private void ModifyUserProperty(string input)
+    {
+        if(Input.GrammarCheck(input))
+        {
+            if (input.Split(" ")[0] == "/rename")
+            {
+                _userProperty.DisplayName = input.Split(" ")[1];
+            }
+
+            if (input.Split(" ")[0] == "/auth")
+            {
+                _userProperty.Username = input.Split(" ")[1];
+                _userProperty.Secret = input.Split(" ")[2];
+                _userProperty.DisplayName = input.Split(" ")[3];
+            }
+
+            if (input.Split(" ")[0] == "/join")
+            {
+                _userProperty.ChanelId = input.Split(" ")[1];
+            }
+        }
+        _userProperty.MessageContent = input;
     }
 }

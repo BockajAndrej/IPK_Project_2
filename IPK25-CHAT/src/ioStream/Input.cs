@@ -8,7 +8,7 @@ public static class Input
 {
     private static string _savedInput = "";
     
-    public static bool Parser(string[] args, ProgProperty property)
+    public static bool Parser(string[] args, ref ProgProperty property)
     {
         string? argState = null;
         foreach (string arg in args)
@@ -76,7 +76,7 @@ public static class Input
         return true;
     }
     
-    //Return value if is input contend command or message (true = message)
+    //Return value if is input contend command or message (false = message)
     public static bool GrammarCheck(string input)
     {
         if (input.Split(" ").Length == 0)
@@ -86,15 +86,15 @@ public static class Input
         {
             case "/auth":
                 if(input.Split(" ").Length != 4)
-                    throw new Exception("Internal error: invalid grammar state");
+                    return false;
                 break;
             case "/join":
                 if(input.Split(" ").Length != 2)
-                    throw new Exception("Internal error: invalid grammar state");
+                    return false;
                 break;
             case "/rename":
                 if(input.Split(" ").Length != 2)
-                    throw new Exception("Internal error: invalid grammar state");
+                    return false;
                 break;
             default:
                 return false;
@@ -102,31 +102,19 @@ public static class Input
         return true;
     }
     
-    public static MessageTypes? SendMsgType(string input, ref UserProperty userProperty)
+    public static MessageTypes? SendMsgType(string input)
     {
-        if(Input.GrammarCheck(input))
+        if(GrammarCheck(input))
         {
             if (input.Split(" ")[0] == "/rename")
-            {
-                userProperty.DisplayName = input.Split(" ")[1];
                 return null;
-            }
 
             if (input.Split(" ")[0] == "/auth")
-            {
-                userProperty.Username = input.Split(" ")[1];
-                userProperty.Secret = input.Split(" ")[2];
-                userProperty.DisplayName = input.Split(" ")[3];
                 return MessageTypes.Auth;
-            }
 
             if (input.Split(" ")[0] == "/join")
-            {
-                userProperty.ChanelId = input.Split(" ")[1];
                 return MessageTypes.Join;
-            }
         }
-        userProperty.MessageContent = input;
         return MessageTypes.Msg;
     }
     private static MessageTypes? IncomeMsgType(string input)
@@ -158,10 +146,7 @@ public static class Input
     {
         _savedInput += input;
         if (!input.Contains("\r\n"))
-        {
-            Debug.WriteLine($"CONTAIN = {_savedInput}");
             return null;
-        }
         
         string lastStr;
         do
