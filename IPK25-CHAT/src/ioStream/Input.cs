@@ -139,7 +139,7 @@ public static class Input
             return MessageTypes.Confirm;
         if(input.Split(" ")[0] == "PING")
             return MessageTypes.Ping;
-        throw new Exception("OutputMsgType error: Can not recognise message type");
+        return null;
     }
     
     public static MessageTypes? IncomeMsgProcess(string input)
@@ -149,6 +149,7 @@ public static class Input
             return null;
         
         string lastStr;
+        MessageTypes? msgType;
         do
         {
             //Processes first message and next one can save into _saveInput
@@ -162,7 +163,13 @@ public static class Input
             lastStr = str;
             var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
             
-            switch (IncomeMsgType(str))
+            msgType = IncomeMsgType(str);
+            if(msgType == null)
+            {
+                Console.WriteLine($"ERROR: {input}");
+                return msgType;
+            }
+            switch (msgType)
             {
                 case MessageTypes.ReplyOk:
                     Console.Write($"Action Success: {str.Split("IS ")[1]}");
@@ -183,7 +190,7 @@ public static class Input
         }while(_savedInput.Contains("\r\n"));
         
         //Defines according to last message
-        return IncomeMsgType(lastStr);
+        return msgType;
     }
     
     private static void PrintUsage()

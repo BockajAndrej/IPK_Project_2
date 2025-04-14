@@ -71,6 +71,11 @@ public class ClientFsm
                     _lastOutputMsgType = Input.IncomeMsgProcess(msg);
                     if (_lastOutputMsgType != null)
                         await RunFsm(false, msg);
+                    else
+                    {
+                        await _networkUtils.Send(Output.Builder(_userProperty, MessageTypes.Err));
+                        throw new NullReferenceException();
+                    }
                 }
                 catch (Exception ex)
                 {
