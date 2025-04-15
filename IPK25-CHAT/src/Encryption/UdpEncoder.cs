@@ -1,14 +1,16 @@
 using System.Text;
 using IPK25_CHAT.structs;
 
-namespace IPK25_CHAT.ioStream;
+namespace IPK25_CHAT.Encryption;
 
-public static class UdpEncoder
+public class UdpEncoder
 {
-    public static byte[] Builder(UserProperty userProperty, MessageTypes? messageType)
+    public byte[] Builder(UserProperty userProperty, MessageTypes? messageType)
     {
         byte[] data;
         int i = 3;
+        byte[]? displayName;
+        byte[]? msgContent;
         switch (messageType)
         {
             case MessageTypes.Confirm:
@@ -17,7 +19,7 @@ public static class UdpEncoder
                 break;
             case MessageTypes.Auth:
                 var userName = Encoding.UTF8.GetBytes(userProperty.Username);
-                var displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
+                displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
                 var secret = Encoding.UTF8.GetBytes(userProperty.Secret);
                 data = new byte[3 + userName.Length + 1 + displayName.Length + 1 + secret.Length + 1];
                 data[0] = 0x02;
@@ -32,39 +34,52 @@ public static class UdpEncoder
                 data[i++] = 0x00;
                 break;
             case MessageTypes.Join:
-                data = new byte[3];
+                var chanelId = Encoding.UTF8.GetBytes(userProperty.ChanelId);
+                displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
+                data = new byte[3 + chanelId.Length + 1 + displayName.Length + 1];
+                
                 data[0] = 0x03;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.ChanelId))
+                foreach (var b in chanelId)
                     data[i++] = b;
                 data[i++] = 0x00;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.DisplayName))
+                foreach (var b in displayName)
                     data[i++] = b;
                 data[i++] = 0x00;
                 break;
             case MessageTypes.Msg:
-                data = new byte[3];
+                displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
+                msgContent = Encoding.UTF8.GetBytes(userProperty.MessageContent);
+                data = new byte[3 + displayName.Length + 1 + msgContent.Length + 1];
+                
                 data[0] = 0x04;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.DisplayName))
+                foreach (var b in displayName)
                     data[i++] = b;
                 data[i++] = 0x00;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.MessageContent))
+                foreach (var b in msgContent)
                     data[i++] = b;
                 data[i++] = 0x00;
                 break;
             case MessageTypes.Err:
-                data = new byte[3];
+                displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
+                msgContent = Encoding.UTF8.GetBytes(userProperty.MessageContent);
+                data = new byte[3 + displayName.Length + 1 + msgContent.Length + 1];
+                
                 data[0] = 0xFE;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.DisplayName))
+                foreach (var b in displayName)
                     data[i++] = b;
                 data[i++] = 0x00;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.MessageContent))
+                foreach (var b in msgContent)
                     data[i++] = b;
                 data[i++] = 0x00;
                 break;
             case MessageTypes.Bye:
-                data = new byte[3];
+                if (userProperty.DisplayName == null)
+                    userProperty.DisplayName = "Undefined";
+                displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
+                data = new byte[3 + displayName.Length + 1];
+                
                 data[0] = 0xFF;
-                foreach (var b in Encoding.UTF8.GetBytes(userProperty.DisplayName))
+                foreach (var b in displayName)
                     data[i++] = b;
                 data[i++] = 0x00;
                 break;

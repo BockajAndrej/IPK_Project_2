@@ -1,11 +1,12 @@
 using System.Text;
+using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.structs;
 
-namespace IPK25_CHAT.ioStream;
+namespace IPK25_CHAT.Encryption;
 
-public static class UdpDecoder
+public class UdpDecoder : IDecoder<byte[]>
 {
-    private static MessageTypes? DecodeServer_MsgType(byte[] data)
+    private MessageTypes? DecodeServer_MsgType(byte[] data)
     {
         switch (data[0])
         {
@@ -31,7 +32,7 @@ public static class UdpDecoder
         return null;
     }
 
-    private static int numberOfBytesToRead(byte[] data, int startIndex)
+    private int NumberOfBytesToRead(byte[] data, int startIndex)
     {
         int cnt = 0;
         if(startIndex < data.Length)
@@ -42,12 +43,14 @@ public static class UdpDecoder
         return cnt;
     }
     
-    public static MessageTypes? ProcessMsg(byte[] data)
+    //Return type null when receive malformed msg
+    public MessageTypes? ProcessMsg(byte[] data)
     {
         Queue<int> lengths = new Queue<int>();
 
+        //0. byte = type, 1.,2. = id_msg
         int currentIndex = 3;
-        int length = numberOfBytesToRead(data, currentIndex);
+        int length = NumberOfBytesToRead(data, currentIndex);
 
         while (length > 0)
         {
@@ -55,10 +58,15 @@ public static class UdpDecoder
             currentIndex += length;
 
             // read next length at the updated position
-            length = numberOfBytesToRead(data, currentIndex + 1);
+            length = NumberOfBytesToRead(data, currentIndex + 1);
         }
             
         MessageTypes? msgType = DecodeServer_MsgType(data);
+        if(msgType == null)
+        {
+            Console.WriteLine($"ERROR: {Encoding.UTF8.GetString(data)}");
+            return msgType;
+        }
 
         int len;
         byte[] word;

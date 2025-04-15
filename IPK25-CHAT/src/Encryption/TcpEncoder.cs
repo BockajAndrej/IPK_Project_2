@@ -1,10 +1,10 @@
 using IPK25_CHAT.structs;
 
-namespace IPK25_CHAT.ioStream;
+namespace IPK25_CHAT.Encryption;
 
-public static class TcpEncoder
+public class TcpEncoder
 {
-    public static string Builder(UserProperty userProperty, MessageTypes? messageType)
+    public string Builder(UserProperty userProperty, MessageTypes? messageType)
     {
         switch (messageType)
         {

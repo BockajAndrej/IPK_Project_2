@@ -3,14 +3,14 @@ using System.Net.Sockets;
 using System.Text;
 using IPK25_CHAT.structs;
 
-namespace IPK25_CHAT;
+namespace IPK25_CHAT.Network;
 
 public class TcpUtils : ANetUtils
 {
     private TcpClient? _client;
     private NetworkStream? _stream;
     
-    public async Task Connect(ProgProperty prop)
+    public override async Task Setup(ProgProperty prop)
     {
         IPAddress serverIp = ResolveDomain(prop.Url);
         
@@ -24,24 +24,20 @@ public class TcpUtils : ANetUtils
         _stream = _client.GetStream();
     }
     
-    public async Task Send(string msg)
+    public override async Task Send(byte[] msg)
     {
-        // Send message
         Debug.WriteLine("Sending message.");
-        byte[] dataToSend = Encoding.UTF8.GetBytes(msg);
-        await _stream!.WriteAsync(dataToSend);
+        await _stream!.WriteAsync(msg);
         Debug.WriteLine("Message sent.");
     }
 
-    public async Task<string> Receive(CancellationToken token)
+    public override async Task<byte[]?> Receive(CancellationToken token)
     {
-        // Receive response
-        byte[] buffer = new byte[1024];
+        byte[]? buffer = new byte[1024];
         Debug.WriteLine($"Response.... wait");
         int bytesRead = await _stream!.ReadAsync(buffer.AsMemory(0, buffer.Length), token);
-        string response = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-        Debug.WriteLine($"Response: {response}");
-        return response;
+        Debug.WriteLine($"Response: {Encoding.UTF8.GetString(buffer, 0, bytesRead)}");
+        return buffer;
     }
 
     public override void Dispose()

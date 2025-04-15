@@ -1,14 +1,14 @@
-using System.Diagnostics;
 using System.Text.RegularExpressions;
+using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.structs;
 
-namespace IPK25_CHAT.ioStream;
+namespace IPK25_CHAT.Encryption;
 
-public static class TcpDecoder
+public class TcpDecoder : IDecoder<string>
 {
-    private static string _savedInput = "";
+    private string _savedInput = "";
     
-    private static MessageTypes? DecodeServer_MsgType(string input)
+    private MessageTypes? DecodeServer_MsgType(string input)
     {
         switch (input.Split(" ")[0])
         {
@@ -36,7 +36,7 @@ public static class TcpDecoder
         return null;
     }
     
-    public static MessageTypes? ProcessMsg(string input)
+    public MessageTypes? ProcessMsg(string input)
     {
         _savedInput += input;
         if (!input.Contains("\r\n"))

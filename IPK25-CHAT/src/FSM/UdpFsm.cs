@@ -1,57 +1,48 @@
-using IPK25_CHAT.ioStream;
+using IPK25_CHAT.Encryption;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.FSM;
 
-public class UdpFsm : AFsm
+public class UdpFsm : AFsm<byte[]>
 {
-    private UdpUtils _networkUtils;
+    private UdpEncoder _encoder;
     
     public UdpFsm(ProgProperty property) : base(property)
     {
-        _networkUtils = new UdpUtils();
+        _encoder = new UdpEncoder();
     }
 
     protected override void CleanUp()
     {
-        _networkUtils.Dispose();
+        NetworkUtils.Send(_encoder.Builder(UserProperty, MessageTypes.Bye));
+        NetworkUtils.Dispose();
     }
 
-    protected override async Task NetworkSetup()
+    protected override Task NetworkSetup()
     {
-        _networkUtils.Setup();
+        NetworkUtils.Setup(ProgProperty);
+        return Task.CompletedTask;
     }
 
-    protected override async Task ClientTask(string input)
+    protected override Task SnedMessage(UserProperty userProperty, MessageTypes? messageType)
     {
-        _lastInputMsgType = Input.MsgType(input);
-        ModifyUserProperty(input);
-        await RunFsm(input);
-    }
+        NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
+        IsMsgSent = true;
+        var lastLogTime = DateTime.UtcNow;
+        int numberOfTransmits = 0;
+        while (!IsMsgSent && (numberOfTransmits < ProgProperty.NumberOfRetransmits))
+        {
+            if ((DateTime.UtcNow - lastLogTime).TotalMicroseconds >= ProgProperty.Timeout)
+            {
+                NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
+                lastLogTime = DateTime.UtcNow;
+                numberOfTransmits++;
+            }
 
-    protected override async Task ServerTasks(CancellationTokenSource cancellationTokenSource)
-    {
-        Console.ReadKey();
+            Thread.Sleep(50); // krátky spánok kvôli šetreniu CPU
+        }
+        return Task.CompletedTask;
     }
-
-    protected override Task startState(string? input)
-    {
-        _networkUtils.Send(UdpEncoder.Builder(_userProperty, _lastInputMsgType), _progProperty);
-        throw new NotImplementedException();
-    }
-
-    protected override Task authState(string? input)
-    {
-        throw new NotImplementedException();
-    }
-
-    protected override Task openState(string? input)
-    {
-        throw new NotImplementedException();
-    }
-
-    protected override Task joinState(string? input)
-    {
-        throw new NotImplementedException();
-    }
+    
+    
 }

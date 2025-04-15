@@ -73,7 +73,7 @@ public static class Input
     }
     
     //Return value if is input contend command or message (false = message)
-    public static bool isCommand(string input)
+    public static bool IsCommand(string input)
     {
         if (input.Split(" ").Length == 0)
             return false;
@@ -100,7 +100,7 @@ public static class Input
     
     public static MessageTypes? MsgType(string input)
     {
-        if(isCommand(input))
+        if(IsCommand(input))
         {
             if (input.Split(" ")[0] == "/rename")
                 return null;
