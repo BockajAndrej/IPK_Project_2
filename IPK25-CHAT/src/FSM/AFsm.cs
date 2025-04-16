@@ -1,4 +1,3 @@
-using System.Text;
 using IPK25_CHAT.Encryption;
 using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.Network;
@@ -17,8 +16,7 @@ public abstract class AFsm<T>
     protected MessageTypes? LastInputMsgType;
 
     protected ANetUtils NetworkUtils;
-    
-    private IDecoder<T> _decoder;
+    protected IDecoder<T> _decoder;
 
     protected volatile bool IsMsgSent;
 
@@ -41,8 +39,8 @@ public abstract class AFsm<T>
     
     protected abstract void CleanUp();
     protected abstract Task NetworkSetup();
-
-    protected abstract Task SnedMessage(UserProperty userProperty, MessageTypes? messageType);
+    protected abstract Task ServerTasks(CancellationToken token);
+    protected abstract Task SnedMessage(MessageTypes? messageType);
     
     public async Task RunClient()
     {
@@ -63,9 +61,10 @@ public abstract class AFsm<T>
         {
             while (!cts.Token.IsCancellationRequested)
             {
-                string? input = Console.ReadLine();
+                
                 try
                 {
+                    string? input = Console.ReadLine();
                     //C-d ending
                     if (input != null) await ClientTask(input);
                     else throw new NullReferenceException();
@@ -133,36 +132,6 @@ public abstract class AFsm<T>
             await RunFsm(input);
     }
 
-    protected  async Task ServerTasks(CancellationToken token)
-    {
-        byte[]? msg = await NetworkUtils.Receive(token);
-        if(msg != null)
-        {
-            T typeT;
-            if (typeof(T) == typeof(string))
-            {
-                string decoded = Encoding.UTF8.GetString(msg);
-                typeT = (T)(object)decoded.TrimEnd('\0');
-            }
-            else
-                typeT = (T)(object)msg;
-
-            LastOutputMsgType = _decoder.ProcessMsg(typeT);
-            if (LastOutputMsgType != null)
-                if (IsMsgSent && LastInputMsgType == MessageTypes.Confirm)
-                    IsMsgSent = false;
-                else
-                    await RunFsm(null);
-            else
-            {
-                await SnedMessage(UserProperty, MessageTypes.Err);
-                throw new NullReferenceException();
-            }
-        }
-        else
-            Thread.Sleep(50);
-    }
-    
     protected void ModifyUserProperty(string input)
     {
         if(Input.IsCommand(input))
@@ -203,7 +172,7 @@ public abstract class AFsm<T>
                 return;
             }
             ModifyUserProperty(input);
-            await SnedMessage(UserProperty, LastInputMsgType);
+            await SnedMessage(LastInputMsgType);
             return;
         }
         switch (LastOutputMsgType)
@@ -230,7 +199,7 @@ public abstract class AFsm<T>
                 return;
             }
             ModifyUserProperty(input);
-            await SnedMessage(UserProperty, LastInputMsgType);
+            await SnedMessage(LastInputMsgType);
             return;
         }
         switch (LastOutputMsgType)
@@ -244,7 +213,7 @@ public abstract class AFsm<T>
             case MessageTypes.Bye:
                 throw new Exception();
             case MessageTypes.Msg:
-                await SnedMessage(UserProperty, MessageTypes.Err);
+                await SnedMessage(MessageTypes.Err);
                 throw new Exception();
             default:
                 throw new ArgumentOutOfRangeException();
@@ -266,7 +235,7 @@ public abstract class AFsm<T>
                 return;
             }
             ModifyUserProperty(input);
-            await SnedMessage(UserProperty, LastInputMsgType);
+            await SnedMessage(LastInputMsgType);
             return;
         }
         switch (LastOutputMsgType)
@@ -278,7 +247,7 @@ public abstract class AFsm<T>
                 throw new Exception();
             case MessageTypes.ReplyNok:
             case MessageTypes.ReplyOk:
-                await SnedMessage(UserProperty, MessageTypes.Err);
+                await SnedMessage(MessageTypes.Err);
                 throw new Exception();
         }
         throw new ArgumentOutOfRangeException();

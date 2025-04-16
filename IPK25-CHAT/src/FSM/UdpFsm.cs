@@ -1,3 +1,4 @@
+using System.Text;
 using IPK25_CHAT.Encryption;
 using IPK25_CHAT.structs;
 
@@ -12,9 +13,9 @@ public class UdpFsm : AFsm<byte[]>
         _encoder = new UdpEncoder();
     }
 
-    protected override void CleanUp()
+    protected override async void CleanUp()
     {
-        NetworkUtils.Send(_encoder.Builder(UserProperty, MessageTypes.Bye));
+        await SnedMessage(MessageTypes.Bye);
         NetworkUtils.Dispose();
     }
 
@@ -24,25 +25,59 @@ public class UdpFsm : AFsm<byte[]>
         return Task.CompletedTask;
     }
 
-    protected override Task SnedMessage(UserProperty userProperty, MessageTypes? messageType)
+    protected override async Task SnedMessage(MessageTypes? messageType)
     {
+        Debug.WriteLine($"SnedMessage with == {UserProperty.MessageId}");
         NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
-        IsMsgSent = true;
+        
+        if (messageType != MessageTypes.Confirm)
+        {
+            IsMsgSent = true;
+            await RetransmitTasks(UserProperty, messageType);
+            UserProperty.MessageId++;
+        }
+        
+    }
+    
+    
+    protected override async Task ServerTasks(CancellationToken token)
+    {
+        byte[]? msg = await NetworkUtils.Receive(token);
+        
+        LastOutputMsgType = _decoder.ProcessMsg(msg);
+        if (LastOutputMsgType != null)
+        {
+            if (IsMsgSent && (LastOutputMsgType == MessageTypes.Confirm))
+                IsMsgSent = false;
+            else
+            {
+                await SnedMessage(MessageTypes.Confirm);
+                await RunFsm(null);
+            }
+        }
+        else
+        {
+            await SnedMessage(MessageTypes.Err);
+            throw new NullReferenceException();
+        }
+    }
+
+    protected async Task RetransmitTasks(UserProperty userProperty, MessageTypes? messageType)
+    {
         var lastLogTime = DateTime.UtcNow;
         int numberOfTransmits = 0;
-        while (!IsMsgSent && (numberOfTransmits < ProgProperty.NumberOfRetransmits))
+
+        while (IsMsgSent && (numberOfTransmits < ProgProperty.NumberOfRetransmits))
         {
-            if ((DateTime.UtcNow - lastLogTime).TotalMicroseconds >= ProgProperty.Timeout)
+            if ((DateTime.UtcNow - lastLogTime).TotalMilliseconds >= ProgProperty.Timeout)
             {
-                NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
+                //Console.WriteLine($"V Posielani = {(DateTime.UtcNow - lastLogTime).TotalMilliseconds} > {ProgProperty.Timeout}");
+                NetworkUtils.Send(_encoder.Builder(userProperty, messageType));
                 lastLogTime = DateTime.UtcNow;
                 numberOfTransmits++;
             }
-
-            Thread.Sleep(50); // krátky spánok kvôli šetreniu CPU
+            await Task.Delay(10);
         }
-        return Task.CompletedTask;
     }
-    
     
 }

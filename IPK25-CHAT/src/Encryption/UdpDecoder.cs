@@ -47,9 +47,19 @@ public class UdpDecoder : IDecoder<byte[]>
     public MessageTypes? ProcessMsg(byte[] data)
     {
         Queue<int> lengths = new Queue<int>();
+        
+        int currentIndex = 3;
+        
+        MessageTypes? msgType = DecodeServer_MsgType(data);
+        if(msgType == null)
+        {
+            Console.WriteLine($"ERROR: {Encoding.UTF8.GetString(data)}");
+            return msgType;
+        }
+        if (msgType.Value == MessageTypes.ReplyOk || msgType.Value == MessageTypes.ReplyNok)
+            currentIndex = 6;
 
         //0. byte = type, 1.,2. = id_msg
-        int currentIndex = 3;
         int length = NumberOfBytesToRead(data, currentIndex);
 
         while (length > 0)
@@ -60,13 +70,6 @@ public class UdpDecoder : IDecoder<byte[]>
             // read next length at the updated position
             length = NumberOfBytesToRead(data, currentIndex + 1);
         }
-            
-        MessageTypes? msgType = DecodeServer_MsgType(data);
-        if(msgType == null)
-        {
-            Console.WriteLine($"ERROR: {Encoding.UTF8.GetString(data)}");
-            return msgType;
-        }
 
         int len;
         byte[] word;
@@ -74,17 +77,23 @@ public class UdpDecoder : IDecoder<byte[]>
         byte[] word2;
         switch (msgType)
         {
+            case MessageTypes.Confirm:
+            case MessageTypes.Bye:
+            case MessageTypes.Ping:
+                break;
             case MessageTypes.ReplyOk:
                 len = lengths.Dequeue();
+                currentIndex = 6;
                 word = new byte[len];
                 Array.Copy(data, currentIndex, word, 0, len);
-                Console.Write($"Action Success: {Encoding.UTF8.GetString(word)}");
+                Console.WriteLine($"Action Success: {Encoding.UTF8.GetString(word)}");
                 break;
             case MessageTypes.ReplyNok:
                 len = lengths.Dequeue();
+                currentIndex = 6;
                 word = new byte[len];
                 Array.Copy(data, currentIndex, word, 0, len);
-                Console.Write($"Action Failure: {Encoding.UTF8.GetString(word)}");
+                Console.WriteLine($"Action Failure: {Encoding.UTF8.GetString(word)}");
                 break;
             case MessageTypes.Msg:
                 len = lengths.Dequeue();

@@ -39,7 +39,8 @@ AUTH Scenarios (Send via /auth command):
     Server does *not* send REPLY for AUTH (client should timeout after 5s).
   → /auth delayauth <secret> <DisplayName>
     Server sends REPLY OK for AUTH after a 6-second delay (client should timeout after 5s).
-
+  → /auth nerd <secret> <DisplayName>
+    Server sends REPLY NOK for
 JOIN Scenarios (Send via /join command after successful AUTH):
   Use specific keywords in the <channel_id> field:
   → /join timeoutjoin
@@ -93,7 +94,26 @@ def read_string(data, offset):
     value = data[offset:end_offset].decode('ascii')
     new_offset = end_offset + 1
     return value, new_offset
-def build_confirm(ref_msg_id): return struct.pack('>BH', TYPE_CONFIRM, 0) + struct.pack('>H', ref_msg_id)
+
+
+def build_confirm(ref_msg_id):
+    """
+    Builds the 3-byte UDP CONFIRM message payload.
+    Format: Type (1B, 0x00) | Ref_MessageID (2B, Network Order)
+    """
+    # '>' denotes Big-Endian (Network Byte Order)
+    # 'B' denotes unsigned char (1 byte) for the message type
+    # 'H' denotes unsigned short (2 bytes) for the Ref_MessageID
+    try:
+        # Pack TYPE_CONFIRM and ref_msg_id directly together
+        return struct.pack('>BH', TYPE_CONFIRM, ref_msg_id)
+    except struct.error as e:
+        print(f"[ERROR] Failed to pack CONFIRM message: {e}")
+        # Return an empty byte string or handle error appropriately
+        return b''
+
+
+
 def build_reply(msg_id, success, ref_msg_id, content):
     result_byte = 0x01 if success else 0x00
     content_bytes = content.encode('ascii') + b'\x00'
@@ -149,6 +169,10 @@ def client_handler(handler_sock, client_addr, initial_data, initial_msg_id):
             elif "delayauth" in username_lower:
                  print_log(thread_name, "*** Simulating AUTH REPLY Delay (6s) triggered by username ***")
                  simulate_delay_sec = 6
+            elif username_lower == "nerd":
+                 print_log(thread_name, "*** Simulating AUTH REPLY NOK triggered by username 'nerd' ***")
+                 reply_success = False
+                 reply_content = "Nerds are not allowed here!" # Môžeš dať inú správu ako v TCP
             # Add more triggers based on secret if needed, e.g.
             # elif "badsecret" in secret_lower: reply_success = False; reply_content = "Invalid secret trigger."
 
@@ -372,7 +396,7 @@ def parse_message(data, addr, log_context="Parser"):
 
 
 # --- Main Server (unchanged from previous version) ---
-def run_server(host='127.0.0.1', port=DEFAULT_PORT):
+def run_server(host='0.0.0.0', port=DEFAULT_PORT):
     listen_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     listen_sock.bind((host, port))
     print_log("Server", f"Listening on UDP {host}:{port}")
