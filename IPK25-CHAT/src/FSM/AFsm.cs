@@ -2,6 +2,7 @@ using IPK25_CHAT.Encryption;
 using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.Network;
 using IPK25_CHAT.structs;
+using Timer = System.Timers.Timer;
 
 namespace IPK25_CHAT.FSM;
 
@@ -19,6 +20,7 @@ public abstract class AFsm<T>
     protected IDecoder<T> _decoder;
 
     protected volatile bool IsMsgSent;
+    private Timer? timer;
 
     protected AFsm(ProgProperty property)
     {
@@ -35,6 +37,42 @@ public abstract class AFsm<T>
             NetworkUtils = new UdpUtils();
             _decoder = (IDecoder<T>)new UdpDecoder();
         }
+    }
+    
+    private void ModifyUserProperty(string input)
+    {
+        if(Input.IsCommand(input))
+        {
+            if (input.Split(" ")[0] == "/rename")
+            {
+                UserProperty.DisplayName = input.Split(" ")[1];
+            }
+
+            if (input.Split(" ")[0] == "/auth")
+            {
+                UserProperty.Username = input.Split(" ")[1];
+                UserProperty.Secret = input.Split(" ")[2];
+                UserProperty.DisplayName = input.Split(" ")[3];
+            }
+
+            if (input.Split(" ")[0] == "/join")
+            {
+                UserProperty.ChanelId = input.Split(" ")[1];
+            }
+        }
+        UserProperty.MessageContent = input;
+    }
+    private async Task ClientTask(string input)
+    {
+        LastInputMsgType = Input.MsgType(input);
+        if (LastInputMsgType == null)
+            ModifyUserProperty(input);
+        else
+            await RunFsm(input);
+    }
+    private void WriteError(string input)
+    {
+        Console.WriteLine($"ERROR: {input}");
     }
     
     protected abstract void CleanUp();
@@ -54,6 +92,13 @@ public abstract class AFsm<T>
             e.Cancel = true;
             cts.Cancel();
             Console.In.Dispose(); // should cancel ReadLine
+        };
+        
+        timer = new Timer(5000);
+        timer.Elapsed += (s, e) =>
+        {
+            cts.Cancel();
+            timer.Stop(); // stop repeated cancellation
         };
         
         //Receive stdin
@@ -100,6 +145,7 @@ public abstract class AFsm<T>
         CleanUp();
     }
     
+    //FSM
     protected async Task RunFsm(string? input)
     {
         Debug.WriteLine($"IN STATE: {State}");
@@ -122,48 +168,15 @@ public abstract class AFsm<T>
                 throw new ArgumentOutOfRangeException();
         }
     }
-    
-    protected  async Task ClientTask(string input)
-    {
-        LastInputMsgType = Input.MsgType(input);
-        if (LastInputMsgType == null)
-            ModifyUserProperty(input);
-        else
-            await RunFsm(input);
-    }
-
-    protected void ModifyUserProperty(string input)
-    {
-        if(Input.IsCommand(input))
-        {
-            if (input.Split(" ")[0] == "/rename")
-            {
-                UserProperty.DisplayName = input.Split(" ")[1];
-            }
-
-            if (input.Split(" ")[0] == "/auth")
-            {
-                UserProperty.Username = input.Split(" ")[1];
-                UserProperty.Secret = input.Split(" ")[2];
-                UserProperty.DisplayName = input.Split(" ")[3];
-            }
-
-            if (input.Split(" ")[0] == "/join")
-            {
-                UserProperty.ChanelId = input.Split(" ")[1];
-            }
-        }
-        UserProperty.MessageContent = input;
-    }
-    
-    
-    //Methods for FSM individual states
-    protected async Task StartState(string? input)
+    private async Task StartState(string? input)
     {
         if(input != null)
         {
             if(LastInputMsgType.Value == MessageTypes.Auth)
+            {
                 State = FsmStates.Auth;
+                timer.Start();
+            }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             else
@@ -185,12 +198,16 @@ public abstract class AFsm<T>
         }
     }
 
-    protected async Task AuthState(string? input)
+    private async Task AuthState(string? input)
     {
         if(input != null)
         {
             if(LastInputMsgType.Value == MessageTypes.Auth)
+            {
                 State = FsmStates.Auth;
+                timer.Stop();
+                timer.Start();
+            }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             else
@@ -205,9 +222,11 @@ public abstract class AFsm<T>
         switch (LastOutputMsgType)
         {
             case MessageTypes.ReplyNok:
+                timer.Stop();
                 return;
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
+                timer.Stop();
                 return;
             case MessageTypes.Err:
             case MessageTypes.Bye:
@@ -221,12 +240,15 @@ public abstract class AFsm<T>
 
     }
 
-    protected async Task OpenState(string? input)
+    private async Task OpenState(string? input)
     {
         if(input != null)
         {
             if(LastInputMsgType.Value == MessageTypes.Join)
+            {
                 State = FsmStates.Join;
+                timer.Start();
+            }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             else if (LastInputMsgType.Value != MessageTypes.Msg)
@@ -253,7 +275,7 @@ public abstract class AFsm<T>
         throw new ArgumentOutOfRangeException();
     }
 
-    protected async Task JoinState(string? input)
+    private async Task JoinState(string? input)
     {
         if(input != null)
         {
@@ -272,14 +294,9 @@ public abstract class AFsm<T>
             case MessageTypes.ReplyNok:
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
+                timer.Stop();
                 return;
         }
         throw new ArgumentOutOfRangeException();
-    }
-
-    
-    private void WriteError(string input)
-    {
-        Console.WriteLine($"ERROR: {input}");
     }
 }

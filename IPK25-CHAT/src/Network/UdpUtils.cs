@@ -28,7 +28,6 @@ public class UdpUtils : ANetUtils
         Debug.WriteLine("UDP Send!");
     }
 
-    //Todo: cancelation token missing
     public override async Task<byte[]?> Receive(CancellationToken token)
     {
         //We need to find out which port was dynamicly allocated

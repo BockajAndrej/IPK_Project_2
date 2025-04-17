@@ -34,7 +34,6 @@ public class UdpFsm : AFsm<byte[]>
         {
             IsMsgSent = true;
             await RetransmitTasks(UserProperty, messageType);
-            UserProperty.MessageId++;
         }
         
     }
@@ -47,12 +46,20 @@ public class UdpFsm : AFsm<byte[]>
         LastOutputMsgType = _decoder.ProcessMsg(msg);
         
         int msgId = _decoder.getLastMsgId();
-        UserProperty.MessageId = msgId;
+        
+        //Ignoring increment when waiting for confirm or delay confirm was received
+        bool waitingForConfirm = msgId < UserProperty.MessageId && LastOutputMsgType == MessageTypes.Confirm;
+        if (!(waitingForConfirm || IsMsgSent))
+            UserProperty.MessageId = msgId;
         
         if (LastOutputMsgType != null)
         {
-            if (IsMsgSent && (LastOutputMsgType == MessageTypes.Confirm))
-                IsMsgSent = false;
+            //Ignoring another messages until confirm
+            if (IsMsgSent)
+            {
+                if(LastOutputMsgType == MessageTypes.Confirm)
+                    IsMsgSent = false;
+            }
             else
             {
                 await SnedMessage(MessageTypes.Confirm);
@@ -84,6 +91,8 @@ public class UdpFsm : AFsm<byte[]>
             }
             await Task.Delay(10);
         }
+        if(IsMsgSent)
+            throw new Exception("Server has timed out");
     }
     
 }
