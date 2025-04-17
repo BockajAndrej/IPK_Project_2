@@ -49,9 +49,17 @@ public class UdpDecoder : IDecoder<byte[]>
     //Return type null when receive malformed msg
     public MessageTypes? ProcessMsg(byte[] data)
     {
+        if(data.Length < 3)
+            throw new Exception("Invalid income message length");
+        
         Queue<int> lengths = new Queue<int>();
         
         int currentIndex = 3;
+        
+        byte[] bigEndianBytes  = new byte[2];
+        Array.Copy(data, 1, bigEndianBytes , 0, 2);
+        Array.Reverse(bigEndianBytes);
+        msgId = BitConverter.ToInt16(bigEndianBytes , 0);
         
         MessageTypes? msgType = DecodeServer_MsgType(data);
         if(msgType == null)
@@ -73,11 +81,6 @@ public class UdpDecoder : IDecoder<byte[]>
             // read next length at the updated position
             length = NumberOfBytesToRead(data, currentIndex + 1);
         }
-        
-        byte[] bigEndianBytes  = new byte[2];
-        Array.Copy(data, 1, bigEndianBytes , 0, 2);
-        Array.Reverse(bigEndianBytes);
-        msgId = BitConverter.ToInt16(bigEndianBytes , 0);
 
         int len;
         byte[] word;

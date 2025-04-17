@@ -47,6 +47,7 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 break;
             case MessageTypes.Msg:
+            {
                 displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
                 msgContent = Encoding.UTF8.GetBytes(userProperty.MessageContent);
                 data = new byte[3 + displayName.Length + 1 + msgContent.Length + 2 + 1];
@@ -57,11 +58,9 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 foreach (var b in msgContent)
                     data[i++] = b;
-                //\r\n
-                data[i++] = 0x0D;
-                data[i++] = 0x0A;
                 data[i++] = 0x00;
                 break;
+            }
             case MessageTypes.Err:
                 displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
                 msgContent = Encoding.UTF8.GetBytes(userProperty.MessageContent);

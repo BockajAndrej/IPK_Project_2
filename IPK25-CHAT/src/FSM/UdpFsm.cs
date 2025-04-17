@@ -45,10 +45,9 @@ public class UdpFsm : AFsm<byte[]>
         byte[]? msg = await NetworkUtils.Receive(token);
         
         LastOutputMsgType = _decoder.ProcessMsg(msg);
-        int msgId = _decoder.getLastMsgId();
         
-        if(msgId < UserProperty.MessageId)
-            UserProperty.MessageId = msgId;
+        int msgId = _decoder.getLastMsgId();
+        UserProperty.MessageId = msgId;
         
         if (LastOutputMsgType != null)
         {
@@ -63,6 +62,7 @@ public class UdpFsm : AFsm<byte[]>
         }
         else
         {
+            await SnedMessage(MessageTypes.Confirm);
             await SnedMessage(MessageTypes.Err);
             throw new NullReferenceException();
         }
