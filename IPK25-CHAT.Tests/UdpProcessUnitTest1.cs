@@ -27,7 +27,8 @@ public class UdpProcessUnitTest1
     [Fact]
     public void Test3()
     {
-        Assert.Equal(decoder.ProcessMsg(new byte[] {0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x01, 0x00}), MessageTypes.ReplyOk);
+        Assert.Equal(decoder.ProcessMsg(new byte[] {0x01, 0x00, 0x05, 0x01, 0x00, 0x00, 0x01, 0x00}), MessageTypes.ReplyOk);
+        Assert.Equal(5, decoder.getLastMsgId());
     }
     [Fact]
     public void Test6()

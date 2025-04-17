@@ -45,6 +45,11 @@ public class UdpFsm : AFsm<byte[]>
         byte[]? msg = await NetworkUtils.Receive(token);
         
         LastOutputMsgType = _decoder.ProcessMsg(msg);
+        int msgId = _decoder.getLastMsgId();
+        
+        if(msgId < UserProperty.MessageId)
+            UserProperty.MessageId = msgId;
+        
         if (LastOutputMsgType != null)
         {
             if (IsMsgSent && (LastOutputMsgType == MessageTypes.Confirm))
@@ -52,6 +57,7 @@ public class UdpFsm : AFsm<byte[]>
             else
             {
                 await SnedMessage(MessageTypes.Confirm);
+                UserProperty.MessageId++;
                 await RunFsm(null);
             }
         }

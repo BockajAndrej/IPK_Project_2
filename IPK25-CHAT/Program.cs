@@ -10,6 +10,7 @@ using IPK25_CHAT.structs;
 //Todo: incase sensitive osetrit
 //Todo: timeoutjoin pre reply message 5s
 //Todo: viackrat sa posle ale nasledne sa uz nezrusi
+//Todo: len confirm berie zo sprav id ostatne urcene na increment
 ProgProperty progProperty = new ProgProperty(null,null,4567,250,3);
 
 if (!Input.Parser(args, ref progProperty))
