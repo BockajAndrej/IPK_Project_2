@@ -58,6 +58,8 @@ public class UdpDecoder
                 if (data.Length != 3)
                     return null;
                 return MessageTypes.Ping;
+            default:
+                return null;
         }
         return null;
     }

@@ -50,21 +50,23 @@ public class UdpFsm : AFsm<byte[]>
 
         LastOutputMsgType = _decoder.DecodeServer_MsgType(msg);
         var msgOutput = _decoder.ProcessMsg(msg, LastOutputMsgType);
-        int msgId = _decoder.getLastMsgId();
-
-        if(LastOutputMsgType != MessageTypes.Confirm && LastOutputMsgType != MessageTypes.Bye && LastOutputMsgType != MessageTypes.Ping && !zadaneCisla.Contains(msgId))
-        {
-            Console.WriteLine(msgOutput);
-            zadaneCisla.Add(msgId);
-        }
-        
-        //Ignoring increment when waiting for confirm or delay confirm was received
-        bool waitingForConfirm = msgId < UserProperty.MessageId && LastOutputMsgType == MessageTypes.Confirm;
-        if (!(waitingForConfirm || IsMsgSent))
-            UserProperty.MessageId = msgId;
         
         if (LastOutputMsgType != null)
         {
+            int msgId = _decoder.getLastMsgId();
+
+            if(LastOutputMsgType != MessageTypes.Confirm && LastOutputMsgType != MessageTypes.Bye && LastOutputMsgType != MessageTypes.Ping && !zadaneCisla.Contains(msgId))
+            {
+                Console.WriteLine(msgOutput);
+                zadaneCisla.Add(msgId);
+            }
+            
+            //Ignoring increment when waiting for confirm or delay confirm was received
+            bool waitingForConfirm = msgId < UserProperty.MessageId && LastOutputMsgType == MessageTypes.Confirm;
+            if (!(waitingForConfirm || IsMsgSent))
+                UserProperty.MessageId = msgId;
+        
+        
             //Ignoring another messages until confirm
             if (IsMsgSent)
             {
@@ -80,6 +82,7 @@ public class UdpFsm : AFsm<byte[]>
         }
         else
         {
+            Console.WriteLine(msgOutput);
             await SnedMessage(MessageTypes.Confirm);
             await SnedMessage(MessageTypes.Err);
             throw new NullReferenceException();

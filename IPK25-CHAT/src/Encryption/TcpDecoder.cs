@@ -85,9 +85,4 @@ public class TcpDecoder
         //Defines according to last message
         return msgType;
     }
-
-    public int getLastMsgId()
-    {
-        throw new NotImplementedException();
-    }
 }
