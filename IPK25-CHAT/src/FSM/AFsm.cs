@@ -20,7 +20,7 @@ public abstract class AFsm<T>
     protected IDecoder<T> _decoder;
 
     protected volatile bool IsMsgSent;
-    private Timer? timer;
+    private Timer? _timer;
 
     protected AFsm(ProgProperty property)
     {
@@ -43,6 +43,9 @@ public abstract class AFsm<T>
     {
         if(Input.IsCommand(input))
         {
+            if (input == "/help")
+                return;
+            
             if (input.Split(" ")[0] == "/rename")
             {
                 UserProperty.DisplayName = input.Split(" ")[1];
@@ -65,8 +68,10 @@ public abstract class AFsm<T>
     private async Task ClientTask(string input)
     {
         LastInputMsgType = Input.MsgType(input);
-        if (LastInputMsgType == null)
+        if (LastInputMsgType == MessageTypes.Rename)
             ModifyUserProperty(input);
+        else if (LastInputMsgType == MessageTypes.Help)
+            Input.PrintUsage();
         else
             await RunFsm(input);
     }
@@ -94,11 +99,11 @@ public abstract class AFsm<T>
             Console.In.Dispose(); // should cancel ReadLine
         };
         
-        timer = new Timer(5000);
-        timer.Elapsed += (s, e) =>
+        _timer = new Timer(5000);
+        _timer.Elapsed += (s, e) =>
         {
             cts.Cancel();
-            timer.Stop(); // stop repeated cancellation
+            _timer.Stop(); // stop repeated cancellation
         };
         
         //Receive stdin
@@ -175,7 +180,7 @@ public abstract class AFsm<T>
             if(LastInputMsgType.Value == MessageTypes.Auth)
             {
                 State = FsmStates.Auth;
-                timer.Start();
+                _timer.Start();
             }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
@@ -205,8 +210,8 @@ public abstract class AFsm<T>
             if(LastInputMsgType.Value == MessageTypes.Auth)
             {
                 State = FsmStates.Auth;
-                timer.Stop();
-                timer.Start();
+                _timer.Stop();
+                _timer.Start();
             }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
@@ -222,11 +227,11 @@ public abstract class AFsm<T>
         switch (LastOutputMsgType)
         {
             case MessageTypes.ReplyNok:
-                timer.Stop();
+                _timer.Stop();
                 return;
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
-                timer.Stop();
+                _timer.Stop();
                 return;
             case MessageTypes.Err:
             case MessageTypes.Bye:
@@ -247,7 +252,7 @@ public abstract class AFsm<T>
             if(LastInputMsgType.Value == MessageTypes.Join)
             {
                 State = FsmStates.Join;
-                timer.Start();
+                _timer.Start();
             }
             else if (LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
@@ -294,7 +299,7 @@ public abstract class AFsm<T>
             case MessageTypes.ReplyNok:
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
-                timer.Stop();
+                _timer.Stop();
                 return;
         }
         throw new ArgumentOutOfRangeException();

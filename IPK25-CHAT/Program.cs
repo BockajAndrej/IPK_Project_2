@@ -8,6 +8,7 @@ using IPK25_CHAT.structs;
 //Todo: pridat try catch pre send aby po poslani spravi na vypnuty server nebol problem
 //Todo: incase sensitive osetrit
 //Todo: reference ID pri reply sprave
+//Todo: Zmenit excepsny aby bolo zrejme co je ukoncenie a co je chyba
 ProgProperty progProperty = new ProgProperty(null,null,4567,250,3);
 
 if (!Input.Parser(args, ref progProperty))

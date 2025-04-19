@@ -77,6 +77,9 @@ public static class Input
     {
         if (input.Split(" ").Length == 0)
             return false;
+
+        if (input == "/help")
+            return true;
         
         switch (input.Split(" ")[0])
         {
@@ -113,11 +116,18 @@ public static class Input
         }
         return MessageTypes.Msg;
     }
-    
-    private static void PrintUsage()
+
+    public static void PrintUsage()
     {
         Console.WriteLine("Usage: ipk25-CHAT [OPTIONS]");
         Console.WriteLine();
         Console.WriteLine("Options:");
+        Console.WriteLine("Usage:");
+        Console.WriteLine("  -t <tcp|udp>             Transport protocol used for connection (required)");
+        Console.WriteLine("  -s <IP or hostname>      Server IP address or hostname (required)");
+        Console.WriteLine("  -p <port>                Server port (default: 4567)");
+        Console.WriteLine("  -d <timeout_ms>          UDP confirmation timeout in milliseconds (default: 250)");
+        Console.WriteLine("  -r <retry_count>         Maximum number of UDP retransmissions (default: 3)");
+        Console.WriteLine("  -h                       Prints program help output and exits");
     }
 }
