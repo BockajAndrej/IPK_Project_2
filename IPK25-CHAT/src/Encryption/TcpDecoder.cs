@@ -41,7 +41,6 @@ public class TcpDecoder
         if (!input.Contains("\r\n"))
             return null;
         
-        string lastStr;
         MessageTypes? msgType;
         do
         {
@@ -53,7 +52,6 @@ public class TcpDecoder
             else
                 _savedInput = "";
             
-            lastStr = str;
             var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
             
             msgType = DecodeServer_MsgType(str);

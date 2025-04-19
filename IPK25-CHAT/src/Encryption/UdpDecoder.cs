@@ -5,7 +5,7 @@ namespace IPK25_CHAT.Encryption;
 
 public class UdpDecoder
 {
-    private int msgId = 0;
+    private int _msgId;
     
     int CountZeroBytes(byte[] data, int startIndex)
     {
@@ -61,7 +61,6 @@ public class UdpDecoder
             default:
                 return null;
         }
-        return null;
     }
 
     private int NumberOfBytesToRead(byte[] data, int startIndex)
@@ -75,7 +74,7 @@ public class UdpDecoder
         return cnt;
     }
     
-    public int getLastMsgId() => msgId;
+    public int GetLastMsgId() => _msgId;
     
     //Return type null when receive malformed msg
     public string ProcessMsg(byte[] data, MessageTypes? msgType)
@@ -92,7 +91,7 @@ public class UdpDecoder
         byte[] bigEndianBytes  = new byte[2];
         Array.Copy(data, 1, bigEndianBytes , 0, 2);
         Array.Reverse(bigEndianBytes);
-        msgId = BitConverter.ToInt16(bigEndianBytes , 0);
+        _msgId = BitConverter.ToInt16(bigEndianBytes , 0);
         
         if (msgType.Value == MessageTypes.ReplyOk || msgType.Value == MessageTypes.ReplyNok)
             currentIndex = 6;

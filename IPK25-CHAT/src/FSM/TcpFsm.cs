@@ -4,7 +4,7 @@ using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.FSM;
 
-public class TcpFsm : AFsm<string>
+public class TcpFsm : AFsm
 {
     private TcpDecoder _decoder;
     private TcpEncoder _encoder;
@@ -33,7 +33,7 @@ public class TcpFsm : AFsm<string>
     
     protected override async Task ServerTasks(CancellationToken token)
     {
-        byte[]? msg = await NetworkUtils.Receive(token);
+        byte[] msg = await NetworkUtils.Receive(token) ?? throw new InvalidOperationException();
         string decoded = Encoding.UTF8.GetString(msg).TrimEnd('\0');
         try
         {
@@ -41,7 +41,7 @@ public class TcpFsm : AFsm<string>
             if (LastOutputMsgType != null)
                 await RunFsm(null);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await SnedMessage(MessageTypes.Err);
             throw new NullReferenceException();

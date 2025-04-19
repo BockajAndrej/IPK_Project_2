@@ -1,21 +1,20 @@
-using System.Text;
 using IPK25_CHAT.Encryption;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.FSM;
 
-public class UdpFsm : AFsm<byte[]>
+public class UdpFsm : AFsm
 {
     private UdpDecoder _decoder;
     private UdpEncoder _encoder;
-    private HashSet<int> zadaneCisla;
+    private HashSet<int> _usedNums;
     
     
     public UdpFsm(ProgProperty property) : base(property)
     {
         _encoder = new UdpEncoder();
         _decoder = new UdpDecoder();
-        zadaneCisla = new HashSet<int>();
+        _usedNums = new HashSet<int>();
     }
 
     protected override async void CleanUp()
@@ -33,7 +32,7 @@ public class UdpFsm : AFsm<byte[]>
     protected override async Task SnedMessage(MessageTypes? messageType)
     {
         Debug.WriteLine($"SnedMessage with == {UserProperty.MessageId}");
-        NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
+        await NetworkUtils.Send(_encoder.Builder(UserProperty, messageType));
         
         if (messageType != MessageTypes.Confirm)
         {
@@ -46,19 +45,19 @@ public class UdpFsm : AFsm<byte[]>
     
     protected override async Task ServerTasks(CancellationToken token)
     {
-        byte[]? msg = await NetworkUtils.Receive(token);
+        byte[] msg = await NetworkUtils.Receive(token) ?? throw new InvalidOperationException();
 
         LastOutputMsgType = _decoder.DecodeServer_MsgType(msg);
         var msgOutput = _decoder.ProcessMsg(msg, LastOutputMsgType);
         
         if (LastOutputMsgType != null)
         {
-            int msgId = _decoder.getLastMsgId();
+            int msgId = _decoder.GetLastMsgId();
 
-            if(LastOutputMsgType != MessageTypes.Confirm && LastOutputMsgType != MessageTypes.Bye && LastOutputMsgType != MessageTypes.Ping && !zadaneCisla.Contains(msgId))
+            if(LastOutputMsgType != MessageTypes.Confirm && LastOutputMsgType != MessageTypes.Bye && LastOutputMsgType != MessageTypes.Ping && !_usedNums.Contains(msgId))
             {
                 Console.WriteLine(msgOutput);
-                zadaneCisla.Add(msgId);
+                _usedNums.Add(msgId);
             }
             
             //Ignoring increment when waiting for confirm or delay confirm was received
@@ -99,7 +98,7 @@ public class UdpFsm : AFsm<byte[]>
             if ((DateTime.UtcNow - lastLogTime).TotalMilliseconds >= ProgProperty.Timeout)
             {
                 //Console.WriteLine($"V Posielani = {(DateTime.UtcNow - lastLogTime).TotalMilliseconds} > {ProgProperty.Timeout}");
-                NetworkUtils.Send(_encoder.Builder(userProperty, messageType));
+                await NetworkUtils.Send(_encoder.Builder(userProperty, messageType));
                 lastLogTime = DateTime.UtcNow;
                 numberOfTransmits++;
             }

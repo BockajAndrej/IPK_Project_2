@@ -4,7 +4,7 @@ using Timer = System.Timers.Timer;
 
 namespace IPK25_CHAT.FSM;
 
-public abstract class AFsm<T>
+public abstract class AFsm
 {
     protected FsmStates State;
     
@@ -168,12 +168,12 @@ public abstract class AFsm<T>
     {
         if(input != null)
         {
-            if(LastInputMsgType.Value == MessageTypes.Auth)
+            if(LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Auth)
             {
                 State = FsmStates.Auth;
-                _timer.Start();
+                _timer?.Start();
             }
-            else if (LastInputMsgType.Value == MessageTypes.Bye)
+            else if (LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             else
             {
@@ -198,13 +198,13 @@ public abstract class AFsm<T>
     {
         if(input != null)
         {
-            if(LastInputMsgType.Value == MessageTypes.Auth)
+            if(LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Auth)
             {
                 State = FsmStates.Auth;
-                _timer.Stop();
-                _timer.Start();
+                _timer?.Stop();
+                _timer?.Start();
             }
-            else if (LastInputMsgType.Value == MessageTypes.Bye)
+            else if (LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             else
             {
@@ -218,11 +218,11 @@ public abstract class AFsm<T>
         switch (LastOutputMsgType)
         {
             case MessageTypes.ReplyNok:
-                _timer.Stop();
+                _timer?.Stop();
                 return;
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
-                _timer.Stop();
+                _timer?.Stop();
                 return;
             case MessageTypes.Err:
             case MessageTypes.Bye:
@@ -240,14 +240,14 @@ public abstract class AFsm<T>
     {
         if(input != null)
         {
-            if(LastInputMsgType.Value == MessageTypes.Join)
+            if(LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Join)
             {
                 State = FsmStates.Join;
-                _timer.Start();
+                _timer?.Start();
             }
-            else if (LastInputMsgType.Value == MessageTypes.Bye)
+            else if (LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
-            else if (LastInputMsgType.Value != MessageTypes.Msg)
+            else if (LastInputMsgType != null && LastInputMsgType.Value != MessageTypes.Msg)
             {
                 WriteError(input);
                 return;
@@ -271,27 +271,27 @@ public abstract class AFsm<T>
         throw new ArgumentOutOfRangeException();
     }
 
-    private async Task JoinState(string? input)
+    private Task JoinState(string? input)
     {
         if(input != null)
         {
-            if (LastInputMsgType.Value == MessageTypes.Bye)
+            if (LastInputMsgType != null && LastInputMsgType.Value == MessageTypes.Bye)
                 throw new Exception();
             WriteError(input);
-            return;
+            return Task.CompletedTask;
         }
         switch (LastOutputMsgType)
         {
             case MessageTypes.Msg:
-                return;
+                return Task.CompletedTask;
             case MessageTypes.Err:
             case MessageTypes.Bye:
                 throw new Exception();
             case MessageTypes.ReplyNok:
             case MessageTypes.ReplyOk:
                 State = FsmStates.Open;
-                _timer.Stop();
-                return;
+                _timer?.Stop();
+                return Task.CompletedTask;
         }
         throw new ArgumentOutOfRangeException();
     }

@@ -31,7 +31,7 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 foreach (var b in secret)
                     data[i++] = b;
-                data[i++] = 0x00;
+                data[i] = 0x00;
                 break;
             case MessageTypes.Join:
                 var chanelId = Encoding.UTF8.GetBytes(userProperty.ChanelId);
@@ -44,7 +44,7 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 foreach (var b in displayName)
                     data[i++] = b;
-                data[i++] = 0x00;
+                data[i] = 0x00;
                 break;
             case MessageTypes.Msg:
             {
@@ -58,7 +58,7 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 foreach (var b in msgContent)
                     data[i++] = b;
-                data[i++] = 0x00;
+                data[i] = 0x00;
                 break;
             }
             case MessageTypes.Err:
@@ -72,18 +72,16 @@ public class UdpEncoder
                 data[i++] = 0x00;
                 foreach (var b in msgContent)
                     data[i++] = b;
-                data[i++] = 0x00;
+                data[i] = 0x00;
                 break;
             case MessageTypes.Bye:
-                if (userProperty.DisplayName == null)
-                    userProperty.DisplayName = "Undefined";
                 displayName = Encoding.UTF8.GetBytes(userProperty.DisplayName);
                 data = new byte[3 + displayName.Length + 1];
                 
                 data[0] = 0xFF;
                 foreach (var b in displayName)
                     data[i++] = b;
-                data[i++] = 0x00;
+                data[i] = 0x00;
                 break;
             case MessageTypes.Ping:
                 data = new byte[3];
