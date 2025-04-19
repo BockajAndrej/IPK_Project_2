@@ -4,36 +4,36 @@ namespace IPK25_CHAT.Tests;
 
 public class InputUnitTest1
 {
-    private ProgProperty property;
+    private ProgProperty _property;
     
     public InputUnitTest1()
     {
-        property = new ProgProperty();
+        _property = new ProgProperty();
     }
     
     [Fact]
     public void Test1()
     {
-        Assert.True(Input.Parser(new [] { "-t", "tcp", "-s", "127.0.0.1"}, ref property));
-        Assert.Equal(true,  property.IsTcp);
-        Assert.Equal("127.0.0.1",  property.Url);
+        Assert.True(Input.Parser(new [] { "-t", "tcp", "-s", "127.0.0.1"}, ref _property));
+        Assert.Equal(true,  _property.IsTcp);
+        Assert.Equal("127.0.0.1",  _property.Url);
     }
     
     [Fact]
     public void Test2()
     {
-        Assert.True(Input.Parser(new [] { "-t", "tcp", "-s", "localhost", "-p", "4567"}, ref property));
-        Assert.Equal(true,  property.IsTcp);
-        Assert.Equal("localhost",  property.Url);
-        Assert.Equal(4567,  property.Port);
+        Assert.True(Input.Parser(new [] { "-t", "tcp", "-s", "localhost", "-p", "4567"}, ref _property));
+        Assert.Equal(true,  _property.IsTcp);
+        Assert.Equal("localhost",  _property.Url);
+        Assert.Equal(4567,  _property.Port);
     }
     
     [Fact]
     public void Test3()
     {
-        Assert.True(Input.Parser(new [] { "-t", "udp", "-s", "localhost", "-p", "4567"}, ref property));
-        Assert.Equal(false,  property.IsTcp);
-        Assert.Equal("localhost",  property.Url);
-        Assert.Equal(4567,  property.Port);
+        Assert.True(Input.Parser(new [] { "-t", "udp", "-s", "localhost", "-p", "4567"}, ref _property));
+        Assert.Equal(false,  _property.IsTcp);
+        Assert.Equal("localhost",  _property.Url);
+        Assert.Equal(4567,  _property.Port);
     }
 }
