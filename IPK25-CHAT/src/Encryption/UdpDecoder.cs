@@ -1,33 +1,62 @@
 using System.Text;
-using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.Encryption;
 
-public class UdpDecoder : IDecoder<byte[]>
+public class UdpDecoder
 {
     private int msgId = 0;
-    private MessageTypes? DecodeServer_MsgType(byte[] data)
+    
+    int CountZeroBytes(byte[] data, int startIndex)
+    {
+        int count = 0;
+        for (int i = startIndex; i < data.Length; i++)
+        {
+            if (data[i] == 0)
+            {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    public MessageTypes? DecodeServer_MsgType(byte[] data)
     {
         switch (data[0])
         {
             case 0x00:
+                if (data.Length != 3)
+                    return null;
                 return MessageTypes.Confirm;
             case 0x01:
+                if (data.Length < 8)
+                    return null;
                 if(data[3] == 0x00)
                     return MessageTypes.ReplyNok;
                 return MessageTypes.ReplyOk;
             case 0x02:
+                if (data.Length < 9)
+                    return null;
                 return MessageTypes.Auth;
             case 0x03:
+                if (data.Length < 7)
+                    return null;
                 return MessageTypes.Join;
             case 0x04:
+                if (data.Length < 7 || CountZeroBytes(data, 3) == 1)
+                    return null;
                 return MessageTypes.Msg;
             case 0xFE:
+                if (data.Length < 7)
+                    return null;
                 return MessageTypes.Err;
             case 0xFF:
+                if (data.Length < 5)
+                    return null;
                 return MessageTypes.Bye;
             case 0xFD:
+                if (data.Length != 3)
+                    return null;
                 return MessageTypes.Ping;
         }
         return null;
@@ -47,10 +76,12 @@ public class UdpDecoder : IDecoder<byte[]>
     public int getLastMsgId() => msgId;
     
     //Return type null when receive malformed msg
-    public MessageTypes? ProcessMsg(byte[] data)
+    public string ProcessMsg(byte[] data, MessageTypes? msgType)
     {
-        if(data.Length < 3)
-            throw new Exception("Invalid income message length");
+        if (data.Length < 3 || msgType == null)
+        {
+            return $"ERROR: {Encoding.UTF8.GetString(data)}";
+        }
         
         Queue<int> lengths = new Queue<int>();
         
@@ -61,12 +92,6 @@ public class UdpDecoder : IDecoder<byte[]>
         Array.Reverse(bigEndianBytes);
         msgId = BitConverter.ToInt16(bigEndianBytes , 0);
         
-        MessageTypes? msgType = DecodeServer_MsgType(data);
-        if(msgType == null)
-        {
-            Console.WriteLine($"ERROR: {Encoding.UTF8.GetString(data)}");
-            return msgType;
-        }
         if (msgType.Value == MessageTypes.ReplyOk || msgType.Value == MessageTypes.ReplyNok)
             currentIndex = 6;
 
@@ -97,15 +122,13 @@ public class UdpDecoder : IDecoder<byte[]>
                 currentIndex = 6;
                 word = new byte[len];
                 Array.Copy(data, currentIndex, word, 0, len);
-                Console.WriteLine($"Action Success: {Encoding.UTF8.GetString(word)}");
-                break;
+                return $"Action Success: {Encoding.UTF8.GetString(word)}";
             case MessageTypes.ReplyNok:
                 len = lengths.Dequeue();
                 currentIndex = 6;
                 word = new byte[len];
                 Array.Copy(data, currentIndex, word, 0, len);
-                Console.WriteLine($"Action Failure: {Encoding.UTF8.GetString(word)}");
-                break;
+                return $"Action Failure: {Encoding.UTF8.GetString(word)}";
             case MessageTypes.Msg:
                 len = lengths.Dequeue();
                 word = new byte[len];
@@ -116,8 +139,7 @@ public class UdpDecoder : IDecoder<byte[]>
                 word2 = new byte[len];
                 Array.Copy(data, currentIndex, word2, 0, len);
                 
-                Console.WriteLine($"{Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}");
-                break;
+                return $"{Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}";
             case MessageTypes.Err:
                 len = lengths.Dequeue();
                 word = new byte[len];
@@ -128,13 +150,12 @@ public class UdpDecoder : IDecoder<byte[]>
                 word2 = new byte[len];
                 Array.Copy(data, currentIndex, word2, 0, len);
                 
-                Console.WriteLine($"ERROR FROM {Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}");
-                break;
+                return $"ERROR FROM {Encoding.UTF8.GetString(word)}: {Encoding.UTF8.GetString(word2)}";
             default:
-                throw new Exception("Income msg processing error");
+                return $"ERROR: {Encoding.UTF8.GetString(data)}";
         }
             
         //Defines according to last message
-        return msgType;
+        return "";
     }
 }

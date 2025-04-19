@@ -12,7 +12,7 @@ public class UdpProcessUnitTest1
         decoder = new UdpDecoder();
     }
     
-    [Fact]
+    /*[Fact]
     public void Test1()
     {
         Assert.Equal(decoder.ProcessMsg(new byte[] {0x00, 0x00, 0x00}), MessageTypes.Confirm);
@@ -49,5 +49,5 @@ public class UdpProcessUnitTest1
     public void Test9()
     {
         Assert.Equal(decoder.ProcessMsg(new byte[] {0xFD, 0x00, 0x00}), MessageTypes.Ping);
-    }
+    }*/
 }

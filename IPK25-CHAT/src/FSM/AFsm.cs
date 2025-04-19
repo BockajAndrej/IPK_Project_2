@@ -1,5 +1,3 @@
-using IPK25_CHAT.Encryption;
-using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.Network;
 using IPK25_CHAT.structs;
 using Timer = System.Timers.Timer;
@@ -17,7 +15,6 @@ public abstract class AFsm<T>
     protected MessageTypes? LastInputMsgType;
 
     protected ANetUtils NetworkUtils;
-    protected IDecoder<T> _decoder;
 
     protected volatile bool IsMsgSent;
     private Timer? _timer;
@@ -28,15 +25,9 @@ public abstract class AFsm<T>
         ProgProperty = property;
         
         if (property.IsTcp == true)
-        {
             NetworkUtils = new TcpUtils();
-            _decoder = (IDecoder<T>)new TcpDecoder();
-        }
         else
-        {
             NetworkUtils = new UdpUtils();
-            _decoder = (IDecoder<T>)new UdpDecoder();
-        }
     }
     
     private void ModifyUserProperty(string input)

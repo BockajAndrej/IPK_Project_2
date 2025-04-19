@@ -101,18 +101,21 @@ public static class Input
         return true;
     }
     
-    public static MessageTypes? MsgType(string input)
+    public static MessageTypes MsgType(string input)
     {
         if(IsCommand(input))
         {
             if (input.Split(" ")[0] == "/rename")
-                return null;
+                return MessageTypes.Rename;
 
             if (input.Split(" ")[0] == "/auth")
                 return MessageTypes.Auth;
 
             if (input.Split(" ")[0] == "/join")
                 return MessageTypes.Join;
+            
+            if(input == "/help")
+                return MessageTypes.Help;
         }
         return MessageTypes.Msg;
     }

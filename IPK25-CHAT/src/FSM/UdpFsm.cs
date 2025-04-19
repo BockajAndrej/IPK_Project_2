@@ -6,11 +6,16 @@ namespace IPK25_CHAT.FSM;
 
 public class UdpFsm : AFsm<byte[]>
 {
+    private UdpDecoder _decoder;
     private UdpEncoder _encoder;
+    private HashSet<int> zadaneCisla;
+    
     
     public UdpFsm(ProgProperty property) : base(property)
     {
         _encoder = new UdpEncoder();
+        _decoder = new UdpDecoder();
+        zadaneCisla = new HashSet<int>();
     }
 
     protected override async void CleanUp()
@@ -42,10 +47,16 @@ public class UdpFsm : AFsm<byte[]>
     protected override async Task ServerTasks(CancellationToken token)
     {
         byte[]? msg = await NetworkUtils.Receive(token);
-        
-        LastOutputMsgType = _decoder.ProcessMsg(msg);
-        
+
+        LastOutputMsgType = _decoder.DecodeServer_MsgType(msg);
+        var msgOutput = _decoder.ProcessMsg(msg, LastOutputMsgType);
         int msgId = _decoder.getLastMsgId();
+
+        if(LastOutputMsgType != MessageTypes.Confirm && LastOutputMsgType != MessageTypes.Bye && LastOutputMsgType != MessageTypes.Ping && !zadaneCisla.Contains(msgId))
+        {
+            Console.WriteLine(msgOutput);
+            zadaneCisla.Add(msgId);
+        }
         
         //Ignoring increment when waiting for confirm or delay confirm was received
         bool waitingForConfirm = msgId < UserProperty.MessageId && LastOutputMsgType == MessageTypes.Confirm;

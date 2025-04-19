@@ -2,7 +2,7 @@
 
 public static class Debug
 {
-    public static bool IsEnabled = true;
+    public static bool IsEnabled = false;
     public static void WriteLine(string line)
     {
         if (IsEnabled)

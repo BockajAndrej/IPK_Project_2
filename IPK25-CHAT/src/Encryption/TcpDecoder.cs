@@ -1,10 +1,9 @@
 using System.Text.RegularExpressions;
-using IPK25_CHAT.Encryption.Interfaces;
 using IPK25_CHAT.structs;
 
 namespace IPK25_CHAT.Encryption;
 
-public class TcpDecoder : IDecoder<string>
+public class TcpDecoder
 {
     private string _savedInput = "";
     
@@ -61,7 +60,7 @@ public class TcpDecoder : IDecoder<string>
             if(msgType == null)
             {
                 Console.WriteLine($"ERROR: {input}");
-                return msgType;
+                throw new Exception("Invalid message type");
             }
             switch (msgType)
             {
