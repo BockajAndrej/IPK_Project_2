@@ -28,7 +28,7 @@ Paralelizácia bola implementovaná v rámci abstraktnej triedy `AFsm`, konkrét
 ### Stavový automat (FSM)
 Samotný stavový automat (FSM) je definovaný v abstraktnej triede `AFsm` a používa sa rovnako pre oba varianty protokolu (UDP aj TCP). Tento dizajn umožnil zdieľať spoločnú logiku pre správu stavov a prechodov medzi nimi, čím sa minimalizovala duplicita kódu.
 
-Od abstraktnej triedy `AFsm` sú odvodené triedy `UdpFsm` a `TcpFsm`, ktoré obsahujú špecifickú implementáciu potrebnú pre konkrétny protokol:
+Od abstraktnej triedy `AFsm` sú odvodené triedy `UdpFsm` a `TcpFsm`, ktoré obsahujú špecifickú implementáciu potrebnú pre funkcie ako sú `CleanUp()`, `NetworkSetup`, `SnedMessage` či `ServerTasks`:
 
 - **Trieda `UdpFsm`**: Zabezpečuje špecifickú implementáciu správ pre UDP protokol, vrátane potvrdzovania správ `CONFIRM` a sledovania unikátnych identifikátorov `MessageID`.
 
@@ -61,6 +61,13 @@ Testovanie klienta prebiehalo kombináciou manuálneho overovania, sieťovej ana
 1. Wireshark bol použitý v počiatočných fázach implementácie na overenie:
     - či sú správy správne formátované
     - či sú korektne nastavené typy správ a ich hlavičky
+    - či sever odosiela správy
+
+TCP komunikacia
+![Tcp komunikacia](./images/ipk25Tcp.png)
+
+UDP komunikacia
+![Udp komunikacia](./images/ipk25Udp.png)
 
 2. Na testovanie komunikácie sme používali testovací server spolužiaka, ktorý podporoval oba protokoly:
     - TCP aj UDP variant
@@ -72,13 +79,22 @@ Testovanie klienta prebiehalo kombináciou manuálneho overovania, sieťovej ana
     dotnet publish $(PROJECT) -r linux-x64 -c Release -o ./publish
     ```
     - Link na [repozitár](https://github.com/Vlad6422/VUT_IPK_CLIENT_TESTS).
-    - Vysledok po testovani:
+    - Výsledok po testovaní:
     ![alt text](./images/studentTests.png)
 
-4. Testovane na virtualnom stroji `IPK25_Ubuntu24.ova`
+4. Testovanie aplikácie pomocou referenčného servera
+    - Na overenie funkčnosti implementovaného klienta IPK25-CHAT protokolu bola aplikácia testovaná proti verejne dostupnému referenčnému serveru:
+    - Hostname: anton5.fit.vutbr.cz
+    - Port: 4567
+    - Protokoly: TCP aj UDP
+
+Obrazok zobrazujuci komunikaicu so serverom
+![alt text](./images/discordTcp.png)
+
+> Testovane na virtualnom stroji `IPK25_Ubuntu24.ova`
     - Využili sme zdielane virtualne prostredie 
     - Prikay pre spustenie prostredia:
-    ```bash
+    ```
     nix develop ./dev-envs/ipk#csharp
     ```
 
@@ -94,3 +110,8 @@ V rámci realizácie tohto projektu sme získali praktické skúsenosti s implem
 ## Bibliografia
 - ChatGPT, OpenAI. (2024). Konzultácie a pomoc pri tvorbe dokumentácie projektu. [online] Dostupné z: https://chat.openai.com
 - Siakeľ, Tomáš. (2024). Testovací server IPK25-CHAT. Využitý na testovanie implementácie TCP a UDP protokolov.
+- Microsoft Docs. TcpClient Class [online]. Microsoft Learn, 2023. Dostupné z: https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.tcpclient
+- Microsoft Docs. UdpClient Class [online]. Microsoft Learn, 2023. Dostupné z: https://learn.microsoft.com/en-us/dotnet/api/system.net.sockets.udpclient
+- Stack Overflow. How to send and receive data using TCP in C#? [online]. 2022. Dostupné z: https://stackoverflow.com/questions/20729623/how-to-send-and-receive-data-using-tcp-in-c
+- Lua dissector: IPK25-CHAT Wireshark Plugin. Zdrojový súbor ipk25-chat.lua, poskytovaný v rámci zadania.
+- Discord – IPK25-CHAT Integration Server. Overenie prístupu k referenčnému serveru [online]. 2025. https://discord.gg/zmuss9VfzJ

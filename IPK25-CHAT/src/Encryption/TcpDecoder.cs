@@ -9,13 +9,13 @@ public class TcpDecoder
     
     private MessageTypes? DecodeServer_MsgType(string input)
     {
-        switch (input.Split(" ")[0])
+        switch (input.Split(" ")[0].ToUpper())
         {
             case "ERR": 
                 return MessageTypes.Err;
             case "REPLY": 
             {
-                if(input.Split(" ")[1] == "OK")
+                if(input.Split(" ")[1].ToUpper() == "OK")
                     return MessageTypes.ReplyOk;
                 return MessageTypes.ReplyNok;
             }
@@ -52,7 +52,7 @@ public class TcpDecoder
             else
                 _savedInput = "";
             
-            var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)");
+            var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)", RegexOptions.IgnoreCase);
             
             msgType = DecodeServer_MsgType(str);
             if(msgType == null)
@@ -63,10 +63,10 @@ public class TcpDecoder
             switch (msgType)
             {
                 case MessageTypes.ReplyOk:
-                    Console.Write($"Action Success: {str.Split("IS ")[1]}");
+                    Console.Write($"Action Success: {match.Groups[1].Value}");
                     break;
                 case MessageTypes.ReplyNok:
-                    Console.Write($"Action Failure: {str.Split("IS ")[1]}");
+                    Console.Write($"Action Failure: {match.Groups[1].Value}");
                     break;
                 case MessageTypes.Msg:
                     Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
