@@ -88,8 +88,11 @@ UDP komunikacia
     - Port: 4567
     - Protokoly: TCP aj UDP
 
-Obrazok zobrazujuci komunikaicu so serverom
+Obrazok zobrazujuci komunikaicu so serverom pre TCP variantu (AndrejBOBODO)
 ![alt text](./images/discordTcp.png)
+
+Obrazok zobrazujuci komunikaicu so serverom pre UDP variantu (Andrej)
+![alt text](./images/discordUdp.png)
 
 > Testovane na virtualnom stroji `IPK25_Ubuntu24.ova`
     - Využili sme zdielane virtualne prostredie 

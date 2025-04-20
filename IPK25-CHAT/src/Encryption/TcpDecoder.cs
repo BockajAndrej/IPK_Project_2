@@ -52,6 +52,7 @@ public class TcpDecoder
             else
                 _savedInput = "";
             
+            // Regular expressions used below were generated with the assistance of ChatGPT by OpenAI.
             var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)", RegexOptions.IgnoreCase);
             
             msgType = DecodeServer_MsgType(str);

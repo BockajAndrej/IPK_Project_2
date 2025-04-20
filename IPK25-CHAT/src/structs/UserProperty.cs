@@ -4,6 +4,7 @@ namespace IPK25_CHAT.structs;
 
 public struct UserProperty()
 {
+    // Regular expressions used below were generated with the assistance of ChatGPT by OpenAI.
     [RegularExpression(@"^[a-zA-Z0-9_]{1,65535}$")]
     public int MessageId = 0;
 
