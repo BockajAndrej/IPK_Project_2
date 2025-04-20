@@ -60,13 +60,25 @@ public class TcpDecoder
                 Console.WriteLine($"ERROR: {input}");
                 throw new Exception("Invalid message type");
             }
+
+
+            string splitString;
+            if (str.Contains("IS "))
+                splitString = "IS ";
+            else if (str.Contains("Is "))
+                splitString = "Is ";
+            else if (str.Contains("iS "))
+                splitString = "iS ";
+            else
+                splitString = "is ";
+            
             switch (msgType)
             {
                 case MessageTypes.ReplyOk:
-                    Console.Write($"Action Success: {match.Groups[1].Value}");
+                    Console.Write($"Action Success: {str.Split(splitString)[1]}");
                     break;
                 case MessageTypes.ReplyNok:
-                    Console.Write($"Action Failure: {match.Groups[1].Value}");
+                    Console.Write($"Action Failure: {str.Split(splitString)[1]}");
                     break;
                 case MessageTypes.Msg:
                     Console.WriteLine($"{match.Groups[1].Value}: {match.Groups[2].Value}");
