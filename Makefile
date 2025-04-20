@@ -1,13 +1,21 @@
 # Makefile
-PROJECT = ./IPK25-CHAT/IPK25-CHAT.csproj
-EXECUTABLE=IPK25-CHAT
+PROJECT_PATH = ./IPK25-CHAT/IPK25-CHAT.csproj
+CONFIGURATION = Release
+RUNTIME = linux-x64
+OUTPUT_DIR = ./
+EXECUTABLE = ipk25chat-client
 
-all: clean publish
+.PHONY: all clean publish
 
-# Self-contained build (nezávislý od system .NET runtime)
+all: publish
+
 publish:
-	dotnet publish $(PROJECT) -r linux-x64 -c Release -o ./publish
+	dotnet publish $(PROJECT_PATH) \
+		-c $(CONFIGURATION) \
+		-r $(RUNTIME) \
+		-p:AssemblyName=$(EXECUTABLE) \
+		-o $(OUTPUT_DIR)
 
-# Vyčistenie projektu (binárky aj výstup)
 clean:
-	rm -rf bin obj publish
+	dotnet clean $(PROJECT_PATH)
+	rm -rf $(OUTPUT_DIR)
