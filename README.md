@@ -57,32 +57,38 @@ Použité knižnice:
 ## Testovanie
 Testovanie klienta prebiehalo kombináciou manuálneho overovania, sieťovej analýzy a spustením študentských testovacích prípadov.
 
-#### Postup testovania
-1. Wireshark bol použitý v počiatočných fázach implementácie na overenie:
+#### **Postup testovania a spôsoby testovania**
+1. **Wireshark bol použitý v počiatočných fázach implementácie na overenie:**
     - či sú správy správne formátované
     - či sú korektne nastavené typy správ a ich hlavičky
     - či sever odosiela správy
 
-TCP komunikacia
-![Tcp komunikacia](./images/ipk25Tcp.png)
+*TCP*
+![Tcp komunikacia](./images/wiresharkTcp.png)
 
-UDP komunikacia
-![Udp komunikacia](./images/ipk25Udp.png)
+*UDP*
+![Udp komunikacia](./images/wiresharkUdp.png)
 
-2. Na testovanie komunikácie sme používali testovací server spolužiaka, ktorý podporoval oba protokoly:
+2. **Na testovanie komunikácie sme používali testovací server spolužiaka, ktorý podporoval oba protokoly:**
     - TCP aj UDP variant
     - Počas testovania sme spoločne odhalili niekoľko chýb v implementácii servera, ktoré boli následne opravené, čo výrazne pomohlo pri ladení klienta
 
-3. Boli použité študentské testy (Autor: Tomáš Hobza)
+3. **Testovanie aplikácie pomocou študentských testov (Autor: Tomáš Hobza)**
     - Pre ich spustenie bolo potrebne previes program do spustitelneho binarneho súboru pomocou prikazu v `Makefile`
     ```make
-    dotnet publish $(PROJECT) -r linux-x64 -c Release -o ./publish
+    dotnet publish $(PROJECT) -r linux-x64 -c Release -o ./
     ```
     - Link na [repozitár](https://github.com/Vlad6422/VUT_IPK_CLIENT_TESTS).
     - Výsledok po testovaní:
     ![alt text](./images/studentTests.png)
 
-4. Testovanie aplikácie pomocou referenčného servera
+4. **Testovanie aplikácie pomocou netcat a wireshark súčasne**
+    - Pre overenie správnosti sieťovej komunikácie, najmä v situáciách, keď existovala neistota ohľadom funkčnosti poskytnutých testovacích serverov alebo samotných testov, sme využívali sieťový nástroj netcat (nc). Tento nástroj nám umožnil rýchlo spustiť jednoduchý TCP alebo UDP server (listener) na lokálnom počítači, na ktorý sme mohli smerovať komunikáciu z našej aplikácie a priamo sledovať odosielané alebo prijímané dáta.
+    ![alt text](./images/netcatTcpServer.png)
+    ![alt text](./images/netcatTcpClient.png)
+    ![alt text](./images/netcatTcpWireshark.png)
+
+5. **Testovanie aplikácie pomocou referenčného servera**
     - Na overenie funkčnosti implementovaného klienta IPK25-CHAT protokolu bola aplikácia testovaná proti verejne dostupnému referenčnému serveru:
     - Hostname: anton5.fit.vutbr.cz
     - Port: 4567
@@ -102,7 +108,7 @@ Obrazok zobrazujuci komunikaicu so serverom pre UDP variantu (Andrej)
     ```
 
 ## Záver
-V rámci realizácie tohto projektu sme získali praktické skúsenosti s implementáciou sieťových aplikácií využívajúcich protokoly TCP a UDP. Súčasťou práce bolo aj navrhnutie vlastného komunikačného protokolu, ktorý efektívne využíva vlastnosti oboch uvedených transportných protokolov. Počas implementácie sme pravidelne vykonávali testovanie a identifikovali rôzne chyby a nedostatky, ktoré sme následne odstraňovali na základe výsledkov získaných zo zadania, testovacích serverov a študentských testov.
+V rámci realizácie tohto projektu sme získali praktické skúsenosti s implementáciou sieťových aplikácií využívajúcich protokoly TCP a UDP. Súčasťou práce bolo aj navrhnutie vlastného komunikačného protokolu, ktorý efektívne využíva vlastnosti oboch uvedených transportných protokolov. Počas implementácie sme pravidelne vykonávali testovanie a identifikovali rôzne chyby a nedostatky programu, ktoré sme následne odstraňovali na základe výsledkov získaných zo zadania, testovacích serverov a študentských testov.
 
 ### UML diagram tried
 ![alt text](./images/UML_IPK25-CHAT.png)
@@ -118,11 +124,3 @@ V rámci realizácie tohto projektu sme získali praktické skúsenosti s implem
 - Stack Overflow. How to send and receive data using TCP in C#? [online]. 2022. Dostupné z: https://stackoverflow.com/questions/20729623/how-to-send-and-receive-data-using-tcp-in-c
 - Lua dissector: IPK25-CHAT Wireshark Plugin. Zdrojový súbor ipk25-chat.lua, poskytovaný v rámci zadania.
 - Discord – IPK25-CHAT Integration Server. Overenie prístupu k referenčnému serveru [online]. 2025. https://discord.gg/zmuss9VfzJ
-
-
-
-
-
-
-9b1392bf-e33c-4f88-a1a6-dc4d1ddcd722
-
