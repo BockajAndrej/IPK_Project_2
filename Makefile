@@ -18,4 +18,8 @@ publish:
 
 clean:
 	dotnet clean $(PROJECT_PATH)
-	rm -rf $(OUTPUT_DIR)
+	rm -f $(OUTPUT_DIR)/$(EXECUTABLE)
+	rm -f $(OUTPUT_DIR)/*.dll
+	rm -f $(OUTPUT_DIR)/*.pdb
+	rm -f $(OUTPUT_DIR)/*.runtimeconfig.json
+	rm -f $(OUTPUT_DIR)/*.deps.json

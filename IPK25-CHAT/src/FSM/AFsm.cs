@@ -186,6 +186,8 @@ public abstract class AFsm
         }
         switch (LastOutputMsgType)
         {
+            case MessageTypes.Ping:
+                return;
             case MessageTypes.Err:
             case MessageTypes.Bye:
                 throw new Exception();
@@ -217,6 +219,7 @@ public abstract class AFsm
         }
         switch (LastOutputMsgType)
         {
+            case MessageTypes.Ping:
             case MessageTypes.ReplyNok:
                 _timer?.Stop();
                 return;
@@ -258,6 +261,7 @@ public abstract class AFsm
         }
         switch (LastOutputMsgType)
         {
+            case MessageTypes.Ping:
             case MessageTypes.Msg:
                 return;
             case MessageTypes.Err:
@@ -282,6 +286,7 @@ public abstract class AFsm
         }
         switch (LastOutputMsgType)
         {
+            case MessageTypes.Ping:
             case MessageTypes.Msg:
                 return Task.CompletedTask;
             case MessageTypes.Err:

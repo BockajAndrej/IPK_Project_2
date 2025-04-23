@@ -42,6 +42,7 @@ public class TcpDecoder
             return null;
         
         MessageTypes? msgType;
+        MessageTypes? msgType_Output = null;
         do
         {
             //Processes first message and next one can save into _saveInput
@@ -56,6 +57,10 @@ public class TcpDecoder
             var match = Regex.Match(str, @"FROM\s+(\S+)\s+IS\s+(.+)", RegexOptions.IgnoreCase);
             
             msgType = DecodeServer_MsgType(str);
+            
+            if(msgType_Output == null)
+                msgType_Output = msgType;
+            
             if(msgType == null)
             {
                 Console.WriteLine($"ERROR: {input}");
@@ -87,6 +92,8 @@ public class TcpDecoder
                 case MessageTypes.Err:
                     Console.WriteLine($"ERROR FROM {match.Groups[1].Value}: {match.Groups[2].Value}");
                     break;
+                case MessageTypes.Ping:
+                    break;
                 default:
                     throw new Exception("Income msg processing error");
             }
@@ -94,6 +101,6 @@ public class TcpDecoder
         }while(_savedInput.Contains("\r\n"));
         
         //Defines according to last message
-        return msgType;
+        return msgType_Output;
     }
 }

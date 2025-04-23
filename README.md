@@ -118,3 +118,11 @@ V rámci realizácie tohto projektu sme získali praktické skúsenosti s implem
 - Stack Overflow. How to send and receive data using TCP in C#? [online]. 2022. Dostupné z: https://stackoverflow.com/questions/20729623/how-to-send-and-receive-data-using-tcp-in-c
 - Lua dissector: IPK25-CHAT Wireshark Plugin. Zdrojový súbor ipk25-chat.lua, poskytovaný v rámci zadania.
 - Discord – IPK25-CHAT Integration Server. Overenie prístupu k referenčnému serveru [online]. 2025. https://discord.gg/zmuss9VfzJ
+
+
+
+
+
+
+9b1392bf-e33c-4f88-a1a6-dc4d1ddcd722
+
